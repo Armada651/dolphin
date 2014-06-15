@@ -23,6 +23,7 @@
 // The host can be just a command line app that opens a window, or a full blown debugger
 // interface.
 
+void* Host_GetRenderHandle();
 bool Host_RendererHasFocus();
 void Host_ConnectWiimote(int wm_idx, bool connect);
 void Host_GetRenderWindowSize(int& x, int& y, int& width, int& height);
@@ -43,4 +44,3 @@ void Host_UpdateTitle(const std::string& title);
 
 // TODO (neobrain): Remove these from host!
 void* Host_GetInstance();
-void* Host_GetRenderHandle();

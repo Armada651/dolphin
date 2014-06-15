@@ -80,7 +80,6 @@ void EmuThread();
 bool g_bStopping = false;
 bool g_bHwInit = false;
 bool g_bStarted = false;
-void *g_pWindowHandle = nullptr;
 std::string g_stateFileName;
 std::thread g_EmuThread;
 
@@ -141,11 +140,6 @@ void DisplayMessage(const std::string& message, int time_in_ms)
 void Callback_DebuggerBreak()
 {
 	CCPU::Break();
-}
-
-void *GetWindowHandle()
-{
-	return g_pWindowHandle;
 }
 
 bool IsRunning()
@@ -212,11 +206,6 @@ bool Init()
 			!!SConfig::GetInstance().m_SYSCONF->
 				GetData<u8>("IPL.AR"));
 	}
-
-	// g_pWindowHandle is first the m_Panel handle,
-	// then it is updated to the render window handle,
-	// within g_video_backend->Initialize()
-	g_pWindowHandle = Host_GetRenderHandle();
 
 	// Start the emu thread
 	g_EmuThread = std::thread(EmuThread);
@@ -383,7 +372,9 @@ void EmuThread()
 
 	HW::Init();
 
-	if (!g_video_backend->Initialize(g_pWindowHandle))
+	void* window_handle = Host_GetRenderHandle();
+
+	if (!g_video_backend->Initialize(window_handle))
 	{
 		PanicAlert("Failed to initialize video backend!");
 		Host_Message(WM_USER_STOP);
@@ -392,7 +383,7 @@ void EmuThread()
 
 	OSD::AddMessage("Dolphin " + g_video_backend->GetName() + " Video Backend.", 5000);
 
-	if (!DSP::GetDSPEmulator()->Initialize(g_pWindowHandle,
+	if (!DSP::GetDSPEmulator()->Initialize(window_handle,
 		_CoreParameter.bWii, _CoreParameter.bDSPThread))
 	{
 		HW::Shutdown();
@@ -402,11 +393,11 @@ void EmuThread()
 		return;
 	}
 
-	Pad::Initialize(g_pWindowHandle);
+	Pad::Initialize(window_handle);
 	// Load and Init Wiimotes - only if we are booting in wii mode
 	if (g_CoreStartupParameter.bWii)
 	{
-		Wiimote::Initialize(g_pWindowHandle, !g_stateFileName.empty());
+		Wiimote::Initialize(window_handle, !g_stateFileName.empty());
 
 		// Activate wiimotes which don't have source set to "None"
 		for (unsigned int i = 0; i != MAX_BBMOTES; ++i)
@@ -415,7 +406,7 @@ void EmuThread()
 
 	}
 
-	AudioCommon::InitSoundStream(g_pWindowHandle);
+	AudioCommon::InitSoundStream(window_handle);
 
 	// The hardware is initialized.
 	g_bHwInit = true;
