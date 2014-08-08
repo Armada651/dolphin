@@ -44,6 +44,7 @@
     <ClCompile Include="ControllerInterface\ExpressionParser.cpp" />
     <ClCompile Include="ControllerInterface\ForceFeedback\ForceFeedbackDevice.cpp" />
     <ClCompile Include="ControllerInterface\XInput\XInput.cpp" />
+    <ClCompile Include="ControllerInterface\Sixense\Sixense.cpp" />
     <ClCompile Include="InputConfig.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
@@ -59,6 +60,7 @@
     <ClInclude Include="ControllerInterface\ExpressionParser.h" />
     <ClInclude Include="ControllerInterface\ForceFeedback\ForceFeedbackDevice.h" />
     <ClInclude Include="ControllerInterface\XInput\XInput.h" />
+    <ClInclude Include="ControllerInterface\Sixense\Sixense.h" />
     <ClInclude Include="GCPadStatus.h" />
     <ClInclude Include="InputConfig.h" />
     <ClInclude Include="stdafx.h" />
@@ -67,6 +69,9 @@
     <Text Include="CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\Externals\hidapi\hidapi.vcxproj">
+      <Project>{549d32d8-1640-46f9-9d78-bae6eb0d723d}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\Common\Common.vcxproj">
       <Project>{2e6c348c-c75c-4d94-8d1e-9c1fcbf3efe4}</Project>
     </ProjectReference>

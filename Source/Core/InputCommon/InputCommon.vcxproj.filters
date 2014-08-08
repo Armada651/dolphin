@@ -13,6 +13,9 @@
     <Filter Include="ControllerInterface\ForceFeedback">
       <UniqueIdentifier>{e10ce316-283c-4be0-848d-578dec2b6404}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ControllerInterface\Sixense">
+      <UniqueIdentifier>{6734b41f-6209-4d25-975f-b10067c3c308}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ControllerEmu.cpp" />
@@ -41,6 +44,9 @@
     <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="ControllerInterface\ForceFeedback\ForceFeedbackDevice.cpp">
       <Filter>ControllerInterface\ForceFeedback</Filter>
+    </ClCompile>
+    <ClCompile Include="ControllerInterface\Sixense\Sixense.cpp">
+      <Filter>ControllerInterface\Sixense</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -71,6 +77,9 @@
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="ControllerInterface\ForceFeedback\ForceFeedbackDevice.h">
       <Filter>ControllerInterface\ForceFeedback</Filter>
+    </ClInclude>
+    <ClInclude Include="ControllerInterface\Sixense\Sixense.h">
+      <Filter>ControllerInterface\Sixense</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -26,6 +26,9 @@
 #ifdef CIFACE_USE_ANDROID
 	#include "InputCommon/ControllerInterface/Android/Android.h"
 #endif
+#ifdef CIFACE_USE_SIXENSE
+	#include "InputCommon/ControllerInterface/Sixense/Sixense.h"
+#endif
 
 using namespace ciface::ExpressionParser;
 
@@ -66,6 +69,9 @@ void ControllerInterface::Initialize()
 #endif
 #ifdef CIFACE_USE_ANDROID
 	ciface::Android::Init(m_devices);
+#endif
+#ifdef CIFACE_USE_SIXENSE
+	ciface::Sixense::Init(m_devices);
 #endif
 
 	m_is_init = true;
@@ -114,6 +120,9 @@ void ControllerInterface::Shutdown()
 #endif
 #ifdef CIFACE_USE_ANDROID
 	// nothing needed
+#endif
+#ifdef CIFACE_USE_SIXENSE
+	ciface::Sixense::DeInit();
 #endif
 
 	m_is_init = false;
