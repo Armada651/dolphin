@@ -95,9 +95,9 @@ struct VideoConfig final
 	bool bDumpEFBTarget;
 	bool bUseFFV1;
 	bool bFreeLook;
-	bool bAnaglyphStereo;
-	int iAnaglyphStereoSeparation;
-	int iAnaglyphFocalAngle;
+	bool bStereo;
+	int iStereoSeparation;
+	int iStereoFocalAngle;
 	bool bBorderlessFullscreen;
 
 	// Hacks
