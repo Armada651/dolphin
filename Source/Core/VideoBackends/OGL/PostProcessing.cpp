@@ -26,10 +26,9 @@ static char s_vertex_shader[] =
 	"	uv0 = rawpos * src_rect.zw + src_rect.xy;\n"
 	"}\n";
 
-OpenGLPostProcessing::OpenGLPostProcessing()
+OpenGLPostProcessing::OpenGLPostProcessing() : m_initialized(false)
 {
 	CreateHeader();
-	m_initialized = false;
 }
 
 OpenGLPostProcessing::~OpenGLPostProcessing()
@@ -38,7 +37,7 @@ OpenGLPostProcessing::~OpenGLPostProcessing()
 }
 
 void OpenGLPostProcessing::BlitFromTexture(TargetRectangle src, TargetRectangle dst,
-                                           int src_texture, int src_width, int src_height)
+                                           int src_texture, int src_width, int src_height, int layer)
 {
 	ApplyShader();
 
@@ -52,6 +51,7 @@ void OpenGLPostProcessing::BlitFromTexture(TargetRectangle src, TargetRectangle 
 	glUniform4f(m_uniform_src_rect, src.left / (float) src_width, src.bottom / (float) src_height,
 		    src.GetWidth() / (float) src_width, src.GetHeight() / (float) src_height);
 	glUniform1ui(m_uniform_time, (GLuint)m_timer.GetTimeElapsed());
+	glUniform1i(m_uniform_layer, layer);
 
 	if (m_config.IsDirty())
 	{
@@ -124,7 +124,7 @@ void OpenGLPostProcessing::BlitFromTexture(TargetRectangle src, TargetRectangle 
 	}
 
 	glActiveTexture(GL_TEXTURE0+9);
-	glBindTexture(GL_TEXTURE_2D, src_texture);
+	glBindTexture(GL_TEXTURE_2D_ARRAY, src_texture);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
 
@@ -138,7 +138,7 @@ void OpenGLPostProcessing::ApplyShader()
 	m_uniform_bindings.clear();
 
 	// load shader from disk
-	std::string default_shader = "void main() { SetOutput(Sample()); }";
+	std::string default_shader = "void main() { SetOutput(Sample()); }\n";
 	std::string code = "";
 	if (g_ActiveConfig.sPostProcessingShader != "")
 		code = m_config.LoadShader();
@@ -161,6 +161,7 @@ void OpenGLPostProcessing::ApplyShader()
 	m_uniform_resolution = glGetUniformLocation(m_shader.glprogid, "resolution");
 	m_uniform_time = glGetUniformLocation(m_shader.glprogid, "time");
 	m_uniform_src_rect = glGetUniformLocation(m_shader.glprogid, "src_rect");
+	m_uniform_layer = glGetUniformLocation(m_shader.glprogid, "layer");
 
 	for (const auto& it : m_config.GetOptions())
 	{
@@ -177,7 +178,7 @@ void OpenGLPostProcessing::CreateHeader()
 		// Shouldn't be accessed directly by the PP shader
 		// Texture sampler
 		"SAMPLER_BINDING(8) uniform sampler2D samp8;\n"
-		"SAMPLER_BINDING(9) uniform sampler2D samp9;\n"
+		"SAMPLER_BINDING(9) uniform sampler2DArray samp9;\n"
 
 		// Output variable
 		"out float4 ocol0;\n"
@@ -187,16 +188,18 @@ void OpenGLPostProcessing::CreateHeader()
 		"uniform float4 resolution;\n"
 		// Time
 		"uniform uint time;\n"
+		// Layer
+		"uniform int layer;\n"
 
 		// Interfacing functions
 		"float4 Sample()\n"
 		"{\n"
-			"\treturn texture(samp9, uv0);\n"
+			"\treturn texture(samp9, float3(uv0, layer));\n"
 		"}\n"
 
 		"float4 SampleLocation(float2 location)\n"
 		"{\n"
-			"\treturn texture(samp9, location);\n"
+			"\treturn texture(samp9, float3(location, layer));\n"
 		"}\n"
 
 		"#define SampleOffset(offset) textureOffset(samp9, uv0, offset)\n"
