@@ -97,7 +97,7 @@ struct VideoConfig final
 	bool bFreeLook;
 	bool bStereo;
 	int iStereoSeparation;
-	int iStereoFocalAngle;
+	int iStereoFocalLength;
 	bool bBorderlessFullscreen;
 
 	// Hacks
