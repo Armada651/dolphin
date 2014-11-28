@@ -52,7 +52,7 @@ class wxWindow;
 class CRenderFrame : public wxFrame
 {
 	public:
-		CRenderFrame(wxFrame* parent,
+		CRenderFrame(wxWindow* parent,
 			wxWindowID id = wxID_ANY,
 			const wxString& title = "Dolphin",
 			const wxPoint& pos = wxDefaultPosition,
@@ -62,6 +62,7 @@ class CRenderFrame : public wxFrame
 		bool ShowFullScreen(bool show, long style = wxFULLSCREEN_ALL) override;
 
 	private:
+		wxWindow* m_ShadowParent;
 		void OnDropFiles(wxDropFilesEvent& event);
 		static bool IsValidSavestateDropped(const std::string& filepath);
 		#ifdef _WIN32

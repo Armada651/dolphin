@@ -89,9 +89,10 @@ Display *XDisplayFromHandle(void *Handle)
 }
 #endif
 
-CRenderFrame::CRenderFrame(wxFrame* parent, wxWindowID id, const wxString& title,
+CRenderFrame::CRenderFrame(wxWindow* parent, wxWindowID id, const wxString& title,
 		const wxPoint& pos, const wxSize& size, long style)
 	: wxFrame(parent, id, title, pos, size, style)
+	, m_ShadowParent(parent)
 {
 	// Give it an icon
 	wxIcon IconTemp;
@@ -204,23 +205,29 @@ WXLRESULT CRenderFrame::MSWWindowProc(WXUINT nMsg, WXWPARAM wParam, WXLPARAM lPa
 
 bool CRenderFrame::ShowFullScreen(bool show, long style)
 {
-#if defined WIN32
-	if (show && !g_Config.bBorderlessFullscreen)
+	if (show)
 	{
+#if defined WIN32
 		// OpenGL requires the pop-up style to activate exclusive mode.
-		SetWindowStyle((GetWindowStyle() & ~wxDEFAULT_FRAME_STYLE) | wxPOPUP_WINDOW);
-	}
+		if (!g_Config.bBorderlessFullscreen)
+			SetWindowStyle((GetWindowStyle() & ~wxDEFAULT_FRAME_STYLE) | wxPOPUP_WINDOW);
 #endif
+
+		m_ShadowParent = GetParent();
+		Reparent(nullptr);
+	}
 
 	bool result = wxTopLevelWindow::ShowFullScreen(show, style);
 
-#if defined WIN32
 	if (!show)
 	{
+		Reparent(m_ShadowParent);
+
+#if defined WIN32
 		// Restore the default style.
 		SetWindowStyle((GetWindowStyle() & ~wxPOPUP_WINDOW) | wxDEFAULT_FRAME_STYLE);
-	}
 #endif
+	}
 
 	return result;
 }
@@ -1286,7 +1293,6 @@ void CFrame::OnMouse(wxMouseEvent& event)
 void CFrame::DoFullscreen(bool enable_fullscreen)
 {
 	if (g_Config.ExclusiveFullscreenEnabled() &&
-		!SConfig::GetInstance().m_LocalCoreStartupParameter.bRenderToMain &&
 		Core::GetState() == Core::CORE_PAUSE)
 	{
 		// A responsive renderer is required for exclusive fullscreen, but the
@@ -1312,8 +1318,7 @@ void CFrame::DoFullscreen(bool enable_fullscreen)
 	{
 		m_RenderFrame->ShowFullScreen(true, wxFULLSCREEN_ALL);
 	}
-	else if (!g_Config.ExclusiveFullscreenEnabled() ||
-		SConfig::GetInstance().m_LocalCoreStartupParameter.bRenderToMain)
+	else if (!g_Config.ExclusiveFullscreenEnabled())
 	{
 		// Exiting exclusive fullscreen should be done from a Renderer callback.
 		// Therefore we don't exit fullscreen from here if we support exclusive mode.
@@ -1328,40 +1333,11 @@ void CFrame::DoFullscreen(bool enable_fullscreen)
 			// Save the current mode before going to fullscreen
 			AuiCurrent = m_Mgr->SavePerspective();
 			m_Mgr->LoadPerspective(AuiFullscreen, true);
-
-			// Hide toolbar
-			DoToggleToolbar(false);
-
-			// Hide menubar (by having wxwidgets delete it)
-			SetMenuBar(nullptr);
-
-			// Hide the statusbar if enabled
-			if (GetStatusBar()->IsShown())
-			{
-				GetStatusBar()->Hide();
-				this->SendSizeEvent();
-			}
 		}
 		else
 		{
 			// Restore saved perspective
 			m_Mgr->LoadPerspective(AuiCurrent, true);
-
-			// Restore toolbar to the status it was at before going fullscreen.
-			DoToggleToolbar(SConfig::GetInstance().m_InterfaceToolbar);
-
-			// Recreate the menubar if needed.
-			if (wxFrame::GetMenuBar() == nullptr)
-			{
-				SetMenuBar(CreateMenu());
-			}
-
-			// Show statusbar if enabled
-			if (SConfig::GetInstance().m_InterfaceStatusbar)
-			{
-				GetStatusBar()->Show();
-				this->SendSizeEvent();
-			}
 		}
 	}
 	else
@@ -1369,8 +1345,7 @@ void CFrame::DoFullscreen(bool enable_fullscreen)
 		m_RenderFrame->Raise();
 	}
 
-	g_Config.bFullscreen = (!g_Config.ExclusiveFullscreenEnabled() ||
-		SConfig::GetInstance().m_LocalCoreStartupParameter.bRenderToMain) ? false : enable_fullscreen;
+	g_Config.bFullscreen = (!g_Config.ExclusiveFullscreenEnabled()) ? false : enable_fullscreen;
 }
 
 const CGameListCtrl *CFrame::GetGameListCtrl() const
