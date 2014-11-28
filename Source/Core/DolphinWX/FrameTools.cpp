@@ -983,13 +983,13 @@ void CFrame::StartGame(const std::string& filename)
 		m_GameListCtrl->Disable();
 		m_GameListCtrl->Hide();
 
-		// This is a dirty hack that seems to activate MDI behaviour without actually involving MDI frames.
-		// It requires the initial parent of the render frame to be the main frame and then to reparent it to a panel.
-		// TODO: Implement these as proper MDI frames.
-		m_RenderFrame = new CRenderFrame(this, wxID_ANY, _("Dolphin"), wxDefaultPosition, wxDefaultSize, wxNO_BORDER);
-		m_RenderFrame->Reparent(m_Panel);
+		m_RenderFrame = new CRenderFrame(this, wxID_ANY, _("Dolphin"));
+		m_RenderFrame->Maximize();
 
-		m_Panel->GetSizer()->Add(m_RenderFrame, 1, wxEXPAND | wxALL);
+		m_RenderParent = m_RenderFrame;
+		//m_RenderFrame->SetParent(m_Panel);
+		//m_Panel->GetSizer()->Add(m_RenderFrame, 1, wxEXPAND | wxALL);
+
 		if (SConfig::GetInstance().m_LocalCoreStartupParameter.bKeepWindowOnTop)
 			m_RenderFrame->SetWindowStyle(GetWindowStyle() | wxSTAY_ON_TOP);
 		else
@@ -1039,7 +1039,7 @@ void CFrame::StartGame(const std::string& filename)
 #endif
 
 	m_RenderFrame->SetBackgroundColour(*wxBLACK);
-	m_RenderFrame->ShowWithoutActivating();
+	m_RenderFrame->Show();
 
 #if defined(__APPLE__)
 	NSView *view = (NSView *) m_RenderFrame->GetHandle();

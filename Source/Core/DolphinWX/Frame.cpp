@@ -89,9 +89,9 @@ Display *XDisplayFromHandle(void *Handle)
 }
 #endif
 
-CRenderFrame::CRenderFrame(wxWindow* parent, wxWindowID id, const wxString& title,
+CRenderFrame::CRenderFrame(wxMDIParentFrame* parent, wxWindowID id, const wxString& title,
 		const wxPoint& pos, const wxSize& size, long style)
-	: wxFrame(parent, id, title, pos, size, style)
+	: wxMDIChildFrame(parent, id, title, pos, size, style)
 	, m_ShadowParent(parent)
 {
 	// Give it an icon
@@ -238,7 +238,7 @@ bool CRenderFrame::ShowFullScreen(bool show, long style)
 
 wxDEFINE_EVENT(wxEVT_HOST_COMMAND, wxCommandEvent);
 
-BEGIN_EVENT_TABLE(CFrame, CRenderFrame)
+BEGIN_EVENT_TABLE(CFrame, wxMDIParentFrame)
 
 // Menu bar
 EVT_MENU(wxID_OPEN, CFrame::OnOpen)
@@ -352,7 +352,7 @@ CFrame::CFrame(wxFrame* parent,
 		bool _BatchMode,
 		bool ShowLogWindow,
 		long style)
-	: CRenderFrame(parent, id, title, pos, size, style)
+	: wxMDIParentFrame(parent, id, title, pos, size, style)
 	, g_pCodeWindow(nullptr), g_NetPlaySetupDiag(nullptr), g_CheatsWindow(nullptr)
 	, m_SavedPerspectives(nullptr), m_ToolBar(nullptr)
 	, m_GameListCtrl(nullptr), m_Panel(nullptr)
@@ -395,9 +395,14 @@ CFrame::CFrame(wxFrame* parent,
 	m_menubar_shadow = CreateMenu();
 
 	// ---------------
+	// Main MDI Child
+	m_mainMdi = new wxMDIChildFrame(this, wxID_ANY, "Dolphin");
+	m_mainMdi->Maximize();
+
+	// ---------------
 	// Main panel
 	// This panel is the parent for rendering and it holds the gamelistctrl
-	m_Panel = new wxPanel(this, IDM_MPANEL, wxDefaultPosition, wxDefaultSize, 0);
+	m_Panel = new wxPanel(m_mainMdi, IDM_MPANEL, wxDefaultPosition, wxDefaultSize, 0);
 
 	m_GameListCtrl = new CGameListCtrl(m_Panel, wxID_ANY,
 	        wxDefaultPosition, wxDefaultSize,
@@ -410,7 +415,7 @@ CFrame::CFrame(wxFrame* parent,
 	// ---------------
 
 	// Manager
-	m_Mgr = new wxAuiManager(this, wxAUI_MGR_DEFAULT | wxAUI_MGR_LIVE_RESIZE);
+	m_Mgr = new wxAuiManager(m_mainMdi, wxAUI_MGR_DEFAULT | wxAUI_MGR_LIVE_RESIZE);
 
 	m_Mgr->AddPane(m_Panel, wxAuiPaneInfo()
 			.Name("Pane 0").Caption("Pane 0").PaneBorder(false)

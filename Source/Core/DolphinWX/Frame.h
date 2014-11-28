@@ -15,6 +15,7 @@
 #include <wx/frame.h>
 #include <wx/gdicmn.h>
 #include <wx/image.h>
+#include <wx/mdi.h>
 #include <wx/mstream.h>
 #include <wx/panel.h>
 #include <wx/string.h>
@@ -49,10 +50,10 @@ class wxListEvent;
 class wxMenuItem;
 class wxWindow;
 
-class CRenderFrame : public wxFrame
+class CRenderFrame : public wxMDIChildFrame
 {
 	public:
-		CRenderFrame(wxWindow* parent,
+		CRenderFrame(wxMDIParentFrame* parent,
 			wxWindowID id = wxID_ANY,
 			const wxString& title = "Dolphin",
 			const wxPoint& pos = wxDefaultPosition,
@@ -72,7 +73,7 @@ class CRenderFrame : public wxFrame
 
 };
 
-class CFrame : public CRenderFrame
+class CFrame : public wxMDIParentFrame
 {
 public:
 	CFrame(wxFrame* parent,
@@ -167,6 +168,7 @@ private:
 	CLogWindow* m_LogWindow;
 	LogConfigWindow* m_LogConfigWindow;
 	FifoPlayerDlg* m_FifoPlayerDlg;
+	wxMDIChildFrame* m_mainMdi;
 	bool UseDebugger;
 	bool m_bBatchMode;
 	bool m_bEdit;
