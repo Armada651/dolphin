@@ -930,19 +930,19 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 	const bool fullscreen = g_ActiveConfig.bFullscreen &&
 		!SConfig::GetInstance().m_LocalCoreStartupParameter.bRenderToMain;
 
-	bool fullscreen_changed = s_last_fullscreen_mode != fullscreen;
-
 	bool fullscreen_state;
-	if (SUCCEEDED(D3D::GetFullscreenState(&fullscreen_state)))
+	if (fullscreen && SUCCEEDED(D3D::GetFullscreenState(&fullscreen_state)))
 	{
-		if (fullscreen_state != fullscreen && Host_RendererHasFocus())
+		if (fullscreen_state != s_last_fullscreen_mode)
 		{
 			// The current fullscreen state does not match the configuration,
-			// this may happen when the renderer frame loses focus. When the
-			// render frame is in focus again we can re-apply the configuration.
-			fullscreen_changed = true;
+			// this may happen when the renderer frame loses focus. We should
+			// safely exit fullscreen in this case.
+			fullscreen = false;
 		}
 	}
+
+	bool fullscreen_changed = s_last_fullscreen_mode != fullscreen;
 
 	bool xfbchanged = false;
 
