@@ -299,13 +299,14 @@ static inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, API_T
 	GenerateVSOutputMembers<T>(out, ApiType);
 	out.Write("};\n");
 
+	const bool use_fast_depth = ApiType == API_D3D ? true : g_ActiveConfig.bFastDepthCalc;
 	const bool forced_early_z = g_ActiveConfig.backend_info.bSupportsEarlyZ && bpmem.UseEarlyDepthTest()
-	                            && (g_ActiveConfig.bFastDepthCalc || bpmem.alpha_test.TestResult() == AlphaTest::UNDETERMINED)
+	                            && (use_fast_depth || bpmem.alpha_test.TestResult() == AlphaTest::UNDETERMINED)
 	                            // We can't allow early_ztest for zfreeze because depth is overridden per-pixel.
 	                            // This means it's impossible for zcomploc to be emulated on a zfrozen polygon.
 	                            && !(bpmem.zmode.testenable && bpmem.genMode.zfreeze);
 	const bool per_pixel_depth = (bpmem.ztex2.op != ZTEXTURE_DISABLE && bpmem.UseLateDepthTest())
-	                             || (!g_ActiveConfig.bFastDepthCalc && bpmem.zmode.testenable && !forced_early_z)
+	                             || (!use_fast_depth && bpmem.zmode.testenable && !forced_early_z)
 	                             || (bpmem.zmode.testenable && bpmem.genMode.zfreeze);
 
 	if (forced_early_z)
@@ -330,7 +331,7 @@ static inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, API_T
 			out.Write("[earlydepthstencil]\n");
 		}
 	}
-	else if (bpmem.UseEarlyDepthTest() && (g_ActiveConfig.bFastDepthCalc || bpmem.alpha_test.TestResult() == AlphaTest::UNDETERMINED) && is_writing_shadercode)
+	else if (bpmem.UseEarlyDepthTest() && (use_fast_depth || bpmem.alpha_test.TestResult() == AlphaTest::UNDETERMINED) && is_writing_shadercode)
 	{
 		static bool warn_once = true;
 		if (warn_once)
@@ -567,9 +568,9 @@ static inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, API_T
 		if (ApiType == API_OPENGL)
 			out.Write("\tscreenpos.y = %i - screenpos.y;\n", EFB_HEIGHT);
 
-		out.Write("\tint zCoord = int(" I_ZSLOPE".z + " I_ZSLOPE".x * screenpos.x + " I_ZSLOPE".y * screenpos.y);\n");
+		out.Write("\tint zCoord = 0xFFFFFF - int(" I_ZSLOPE".z + " I_ZSLOPE".x * screenpos.x + " I_ZSLOPE".y * screenpos.y);\n");
 	}
-	else if (!g_ActiveConfig.bFastDepthCalc)
+	else if (!use_fast_depth)
 	{
 		// FastDepth means to trust the depth generated in perspective division.
 		// It should be correct, but it seems not to be as accurate as required. TODO: Find out why!
@@ -582,7 +583,7 @@ static inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, API_T
 	}
 	else
 	{
-		out.Write("\tint zCoord = int(rawpos.z * 16777216.0);\n");
+		out.Write("\tint zCoord = 0xFFFFFF - int(rawpos.z * 16777216.0);\n");
 	}
 	out.Write("\tzCoord = clamp(zCoord, " I_ZBIAS"[1].x - " I_ZBIAS"[1].y, " I_ZBIAS"[1].x);\n");
 
@@ -592,7 +593,7 @@ static inline void GeneratePixelShader(T& out, DSTALPHA_MODE dstAlphaMode, API_T
 	uid_data->ztex_op = bpmem.ztex2.op;
 	uid_data->per_pixel_depth = per_pixel_depth;
 	uid_data->forced_early_z = forced_early_z;
-	uid_data->fast_depth_calc = g_ActiveConfig.bFastDepthCalc;
+	uid_data->fast_depth_calc = use_fast_depth;
 	uid_data->early_ztest = bpmem.UseEarlyDepthTest();
 	uid_data->fog_fsel = bpmem.fog.c_proj_fsel.fsel;
 	uid_data->zfreeze = bpmem.genMode.zfreeze;
@@ -1129,7 +1130,12 @@ static inline void WriteAlphaTest(T& out, pixel_shader_uid_data* uid_data, API_T
 	if (dstAlphaMode == DSTALPHA_DUAL_SOURCE_BLEND)
 		out.Write("\t\tocol1 = float4(0.0, 0.0, 0.0, 0.0);\n");
 	if (per_pixel_depth)
-		out.Write("\t\tdepth = 1.0;\n");
+	{
+		if (ApiType == API_D3D)
+			out.Write("\t\tdepth = 0.0;\n");
+		else
+			out.Write("\t\tdepth = 1.0;\n");
+	}
 
 	// ZCOMPLOC HACK:
 	// The only way to emulate alpha test + early-z is to force early-z in the shader.
@@ -1219,6 +1225,7 @@ static inline void WriteFog(T& out, pixel_shader_uid_data* uid_data)
 	}
 
 	out.Write("\tint ifog = iround(fog * 256.0);\n");
+
 	if (DriverDetails::HasBug(DriverDetails::BUG_BROKENIVECSHIFTS))
 		out.Write("\tprev.rgb = irshift((prev.rgb * (256 - ifog) + " I_FOGCOLOR".rgb * ifog), 8);\n");
 	else
