@@ -8,6 +8,7 @@
 
 #include "VideoCommon/LookUpTables.h"
 #include "VideoCommon/TextureDecoder.h"
+#include "VideoCommon/ImageWrite.h"
 
 
 namespace TextureEncoder
@@ -1406,6 +1407,13 @@ void Encode(u8 *dest_ptr)
 			format |= _GX_TF_CTF;
 
 	u8 *src = EfbInterface::GetPixelPointer(bpmem.copyTexSrcXY.x, bpmem.copyTexSrcXY.y, bFromZBuffer);
+	u8 *dump = EfbInterface::GetPixelPointer(0, 0, bFromZBuffer);
+
+	static int count = 0;
+	u32 width = 480;
+	u32 height = 480;
+	TextureToPng(dump, width * 4, StringFromFormat("%sefb_frame_%i.png", File::GetUserPath(D_DUMPTEXTURES_IDX).c_str(),
+		count++), width, height, false);
 
 	if (bpmem.triggerEFBCopy.half_scale)
 	{

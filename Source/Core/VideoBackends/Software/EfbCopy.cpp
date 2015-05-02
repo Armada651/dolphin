@@ -2,6 +2,7 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
+#include "Core/ConfigManager.h"
 #include "Core/Core.h"
 #include "Core/HW/Memmap.h"
 #include "VideoBackends/OGL/GLInterfaceBase.h"
@@ -16,6 +17,7 @@
 #include "VideoBackends/Software/SWVideoConfig.h"
 #include "VideoBackends/Software/TextureEncoder.h"
 #include "VideoCommon/Fifo.h"
+#include "VideoCommon/ImageWrite.h"
 
 static const float s_gammaLUT[] =
 {
