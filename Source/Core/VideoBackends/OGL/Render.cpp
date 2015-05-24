@@ -1028,7 +1028,7 @@ u32 Renderer::AccessEFB(EFBAccessType type, u32 x, u32 y, u32 poke_data)
 			}
 			else
 			{
-				ret = MathUtil::Clamp<u32>((u32)(val * 16777216.0f), 0, 0xFFFFFF);
+				ret = MathUtil::Clamp<u32>((u32)(val * 16777216.0f + xfmem.viewport.zRange / 2.0f), 0, 0xFFFFFF);
 			}
 			return ret;
 		}
