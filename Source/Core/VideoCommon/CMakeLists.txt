@@ -41,6 +41,7 @@ set(SRCS	AsyncRequests.cpp
 			VideoBackendBase.cpp
 			VideoConfig.cpp
 			VideoState.cpp
+			VRTracker.cpp
 			XFMemory.cpp
 			XFStructs.cpp)
 set(LIBS core png)

@@ -690,6 +690,13 @@ if(LIBUSB_FOUND)
 	include_directories(${LIBUSB_INCLUDE_DIR})
 endif(LIBUSB_FOUND)
 
+include(FindOSVR OPTIONAL)
+if(OSVR_FOUND)
+	message("Using OSVR")
+	add_definitions(-DCIFACE_USE_OSVR)
+	include_directories(${OSVR_INCLUDE_DIR})
+endif(OSVR_FOUND)
+
 set(SFML_REQD_VERSION 2.1)
 if(NOT APPLE AND NOT ANDROID)
 	find_package(SFML ${SFML_REQD_VERSION} COMPONENTS network system)
