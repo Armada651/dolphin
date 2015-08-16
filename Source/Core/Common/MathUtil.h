@@ -204,6 +204,7 @@ public:
 
 	static void Multiply(const Quaternion &a, const Quaternion &b, Quaternion &result);
 
+	// w, x, y, z
 	float data[4];
 };
 
