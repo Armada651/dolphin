@@ -18,6 +18,7 @@
 #include <wx/slider.h>
 #include <wx/stattext.h>
 
+#include "Common/Assert.h"
 #include "Common/FileUtil.h"
 #include "Common/SysConf.h"
 #include "Core/ConfigManager.h"
@@ -105,7 +106,7 @@ static wxString ar_desc = wxTRANSLATE("Select what aspect ratio to use when rend
 static wxString ws_hack_desc = wxTRANSLATE("Forces the game to output graphics for any aspect ratio.\nUse with \"Aspect Ratio\" set to \"Force 16:9\" to force 4:3-only games to run at 16:9.\nRarely produces good results and often partially breaks graphics and game UIs.\nUnnecessary (and detrimental) if using any AR/Gecko-code widescreen patches.\n\nIf unsure, leave this unchecked.");
 static wxString vsync_desc = wxTRANSLATE("Wait for vertical blanks in order to reduce tearing.\nDecreases performance if emulation speed is below 100%.\n\nIf unsure, leave this unchecked.");
 static wxString af_desc = wxTRANSLATE("Enable anisotropic filtering.\nEnhances visual quality of textures that are at oblique viewing angles.\nMight cause issues in a small number of games.\nOn Direct3D, setting this above 1x will also have the same effect as enabling \"Force Texture Filtering\".\n\nIf unsure, select 1x.");
-static wxString aa_desc = wxTRANSLATE("Reduces the amount of aliasing caused by rasterizing 3D graphics.\nThis smooths out jagged edges on objects.\nHeavily increases GPU load and sometimes causes graphical issues.\n\nIf unsure, select None.");
+static wxString aa_desc = wxTRANSLATE("Reduces the amount of aliasing caused by rasterizing 3D graphics. This smooths out jagged edges on objects.\nIncreases GPU load and sometimes causes graphical issues. SSAA is significantly more demanding than MSAA, but provides top quality geometry anti-aliasing and also applies anti-alisasing to lighting, shader effects, and textures.\n\nIf unsure, select None.");
 static wxString scaled_efb_copy_desc = wxTRANSLATE("Greatly increases quality of textures generated using render-to-texture effects.\nRaising the internal resolution will improve the effect of this setting.\nSlightly increases GPU load and causes relatively few graphical issues.\n\nIf unsure, leave this checked.");
 static wxString pixel_lighting_desc = wxTRANSLATE("Calculates lighting of 3D objects per-pixel rather than per-vertex, smoothing out the appearance of lit polygons and making individual triangles less noticeable.\nRarely causes slowdowns or graphical issues.\n\nIf unsure, leave this unchecked.");
 static wxString fast_depth_calc_desc = wxTRANSLATE("Use a less accurate algorithm to calculate depth values.\nCauses issues in a few games, but can give a decent speedup depending on the game and/or your GPU.\n\nIf unsure, leave this checked.");
@@ -123,7 +124,6 @@ static wxString show_fps_desc = wxTRANSLATE("Show the number of frames rendered 
 static wxString log_render_time_to_file_desc = wxTRANSLATE("Log the render time of every frame to User/Logs/render_time.txt. Use this feature when you want to measure the performance of Dolphin.\n\nIf unsure, leave this unchecked.");
 static wxString show_stats_desc = wxTRANSLATE("Show various rendering statistics.\n\nIf unsure, leave this unchecked.");
 static wxString texfmt_desc = wxTRANSLATE("Modify textures to show the format they're encoded in. Needs an emulation reset in most cases.\n\nIf unsure, leave this unchecked.");
-static wxString efb_copy_regions_desc = wxTRANSLATE("[BROKEN]\nHighlight regions the EFB was copied from.\n\nIf unsure, leave this unchecked.");
 static wxString xfb_desc = wxTRANSLATE("Disable any XFB emulation.\nSpeeds up emulation a lot but causes heavy glitches in many games which rely on them (especially homebrew applications).\n\nIf unsure, leave this checked.");
 static wxString xfb_virtual_desc = wxTRANSLATE("Emulate XFBs using GPU texture objects.\nFixes many games which don't work without XFB emulation while not being as slow as real XFB emulation. However, it may still fail for a lot of other games (especially homebrew applications).\n\nIf unsure, leave this checked.");
 static wxString xfb_real_desc = wxTRANSLATE("Emulate XFBs accurately.\nSlows down emulation a lot and prohibits high-resolution rendering but is necessary to emulate a number of games properly.\n\nIf unsure, check virtual XFB emulation instead.");
@@ -365,17 +365,16 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title, con
 
 	// AA
 	{
+
 	text_aamode = new wxStaticText(page_enh, wxID_ANY, _("Anti-Aliasing:"));
-	choice_aamode = CreateChoice(page_enh, vconfig.iMultisampleMode, wxGetTranslation(aa_desc));
+	choice_aamode = new wxChoice(page_enh, wxID_ANY);
+	RegisterControl(choice_aamode, wxGetTranslation(aa_desc));
+	PopulateAAList();
+	choice_aamode->Bind(wxEVT_CHOICE, &VideoConfigDiag::OnAAChanged, this);
 
-	for (const std::string& mode : vconfig.backend_info.AAModes)
-	{
-		choice_aamode->AppendString(wxGetTranslation(StrToWxStr(mode)));
-	}
-
-	choice_aamode->Select(vconfig.iMultisampleMode);
 	szr_enh->Add(text_aamode, 1, wxALIGN_CENTER_VERTICAL, 0);
 	szr_enh->Add(choice_aamode);
+
 	}
 
 	// AF
@@ -413,12 +412,8 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title, con
 	szr_enh->Add(CreateCheckBox(page_enh, _("Scaled EFB Copy"), wxGetTranslation(scaled_efb_copy_desc), vconfig.bCopyEFBScaled));
 	szr_enh->Add(CreateCheckBox(page_enh, _("Per-Pixel Lighting"), wxGetTranslation(pixel_lighting_desc), vconfig.bEnablePixelLighting));
 	szr_enh->Add(CreateCheckBox(page_enh, _("Force Texture Filtering"), wxGetTranslation(force_filtering_desc), vconfig.bForceFiltering));
-
 	szr_enh->Add(CreateCheckBox(page_enh, _("Widescreen Hack"), wxGetTranslation(ws_hack_desc), vconfig.bWidescreenHack));
 	szr_enh->Add(CreateCheckBox(page_enh, _("Disable Fog"), wxGetTranslation(disable_fog_desc), vconfig.bDisableFog));
-
-	ssaa_checkbox = CreateCheckBox(page_enh, _("SSAA"), wxGetTranslation(aa_desc), vconfig.bSSAA);
-	szr_enh->Add(ssaa_checkbox);
 
 	wxStaticBoxSizer* const group_enh = new wxStaticBoxSizer(wxVERTICAL, page_enh, _("Enhancements"));
 	group_enh->Add(szr_enh, 1, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 5);
@@ -543,7 +538,6 @@ VideoConfigDiag::VideoConfigDiag(wxWindow* parent, const std::string &title, con
 	wxGridSizer* const szr_debug = new wxGridSizer(2, 5, 5);
 
 	szr_debug->Add(CreateCheckBox(page_advanced, _("Enable Wireframe"), wxGetTranslation(wireframe_desc), vconfig.bWireFrame));
-	szr_debug->Add(CreateCheckBox(page_advanced, _("Show EFB Copy Regions"), wxGetTranslation(efb_copy_regions_desc), vconfig.bShowEFBCopyRegions));
 	szr_debug->Add(CreateCheckBox(page_advanced, _("Show Statistics"), wxGetTranslation(show_stats_desc), vconfig.bOverlayStats));
 	szr_debug->Add(CreateCheckBox(page_advanced, _("Texture Format Overlay"), wxGetTranslation(texfmt_desc), vconfig.bTexFmtOverlayEnable));
 
@@ -747,4 +741,57 @@ void VideoConfigDiag::PopulatePostProcessingShaders()
 	PostProcessingShaderConfiguration postprocessing_shader;
 	postprocessing_shader.LoadShader(vconfig.sPostProcessingShader);
 	button_config_pp->Enable(postprocessing_shader.HasOptions());
+}
+
+void VideoConfigDiag::PopulateAAList()
+{
+	const std::vector<int>& aa_modes = vconfig.backend_info.AAModes;
+	const bool supports_ssaa = vconfig.backend_info.bSupportsSSAA;
+	m_msaa_modes = 0;
+
+	for (int mode : aa_modes)
+	{
+		if (mode == 1)
+		{
+			choice_aamode->AppendString(_("None"));
+			_assert_msg_(VIDEO, !supports_ssaa || m_msaa_modes == 0, "SSAA setting won't work correctly");
+		}
+		else
+		{
+			choice_aamode->AppendString(std::to_string(mode) + "x MSAA");
+			++m_msaa_modes;
+		}
+	}
+
+	if (supports_ssaa)
+	{
+		for (int mode : aa_modes)
+		{
+			if (mode != 1)
+				choice_aamode->AppendString(std::to_string(mode) + "x SSAA");
+		}
+	}
+
+	int selected_mode_index = vconfig.iMultisampleMode;
+
+	// Don't go out of range
+	if (selected_mode_index >= aa_modes.size())
+		return;
+
+	// Select one of the SSAA modes at the end of the list if SSAA is enabled
+	if (supports_ssaa && vconfig.bSSAA && aa_modes[selected_mode_index] != 1)
+		selected_mode_index += m_msaa_modes;
+
+	choice_aamode->SetSelection(selected_mode_index);
+}
+
+void VideoConfigDiag::OnAAChanged(wxCommandEvent& ev)
+{
+	int mode = ev.GetInt();
+	ev.Skip();
+
+	vconfig.bSSAA = mode > m_msaa_modes;
+	mode -= vconfig.bSSAA * m_msaa_modes;
+
+	vconfig.iMultisampleMode = mode;
 }

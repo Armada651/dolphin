@@ -4,7 +4,8 @@
 
 #pragma once
 
-#include "VideoBackends/OGL/GLExtensions/GLExtensions.h"
+#include "Common/GL/GLExtensions/GLExtensions.h"
+
 #include "VideoCommon/CPMemory.h"
 #include "VideoCommon/NativeVertexFormat.h"
 #include "VideoCommon/VertexManagerBase.h"
@@ -25,7 +26,7 @@ namespace OGL
 
 // Handles the OpenGL details of drawing lots of vertices quickly.
 // Other functionality is moving out.
-class VertexManager : public ::VertexManager
+class VertexManager : public VertexManagerBase
 {
 public:
 	VertexManager();

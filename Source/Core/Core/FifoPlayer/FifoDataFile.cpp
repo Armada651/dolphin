@@ -30,7 +30,7 @@ FifoDataFile::~FifoDataFile()
 
 bool FifoDataFile::HasBrokenEFBCopies() const
 {
-	return version < 2;
+	return m_Version < 2;
 }
 
 void FifoDataFile::SetIsWii(bool isWii)
@@ -150,6 +150,7 @@ FifoDataFile* FifoDataFile::Load(const std::string &filename, bool flagsOnly)
 	FifoDataFile* dataFile = new FifoDataFile;
 
 	dataFile->m_Flags = header.flags;
+	dataFile->m_Version = header.file_version;
 
 	if (flagsOnly)
 	{
@@ -202,8 +203,8 @@ FifoDataFile* FifoDataFile::Load(const std::string &filename, bool flagsOnly)
 
 void FifoDataFile::PadFile(size_t numBytes, File::IOFile& file)
 {
-	const u8 zero = 0;
-	fwrite(&zero, sizeof(zero), numBytes, file.GetHandle());
+	for (size_t i = 0; i < numBytes; ++i)
+		fputc(0, file.GetHandle());
 }
 
 void FifoDataFile::SetFlag(u32 flag, bool set)

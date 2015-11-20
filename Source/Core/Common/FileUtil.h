@@ -10,7 +10,8 @@
 #include <string>
 #include <vector>
 
-#include "Common/Common.h"
+#include "Common/CommonTypes.h"
+#include "Common/NonCopyable.h"
 
 #ifdef _WIN32
 #include "Common/StringUtil.h"
@@ -40,6 +41,7 @@ enum {
 	D_LOGS_IDX,
 	D_MAILLOGS_IDX,
 	D_THEMES_IDX,
+	D_PIPES_IDX,
 	F_DOLPHINCONFIG_IDX,
 	F_DEBUGGERCONFIG_IDX,
 	F_LOGGERCONFIG_IDX,
@@ -143,9 +145,7 @@ std::string GetSysDirectory();
 std::string GetBundleDirectory();
 #endif
 
-#ifdef _WIN32
 std::string &GetExeDirectory();
-#endif
 
 bool WriteStringToFile(const std::string& str, const std::string& filename);
 bool ReadFileToString(const std::string& filename, std::string& str);

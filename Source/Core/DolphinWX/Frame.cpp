@@ -1294,7 +1294,6 @@ void CFrame::ParseHotkeys()
 			case HK_CHANGE_DISC:
 			case HK_REFRESH_LIST:
 			case HK_RESET:
-			case HK_FRAME_ADVANCE:
 			case HK_START_RECORDING:
 			case HK_PLAY_RECORDING:
 			case HK_EXPORT_RECORDING:
@@ -1336,6 +1335,8 @@ void CFrame::ParseHotkeys()
 	// Pause and Unpause
 	if (IsHotkey(HK_PLAY_PAUSE))
 		DoPause();
+	// Frame advance
+	HandleFrameSkipHotkeys();
 	// Stop
 	if (IsHotkey(HK_STOP))
 		DoStop();
@@ -1419,29 +1420,73 @@ void CFrame::ParseHotkeys()
 	{
 		State::Load(g_saveSlot);
 	}
-	if (IsHotkey(HK_DECREASE_DEPTH, true))
+
+	auto savePreset = [](const std::string& param, int value)
+	{
+		IniFile localIni = SConfig::GetInstance().LoadLocalGameIni();
+		localIni.GetOrCreateSection("Enhancements")->Set(
+			StringFromFormat("Stereo%s_%d", param.c_str(), g_Config.iStereoActivePreset),
+			value);
+		std::string iniFileName = File::GetUserPath(D_GAMESETTINGS_IDX) + SConfig::GetInstance().GetUniqueID() + ".ini";
+		OSD::AddMessage(StringFromFormat("%s: %d", param.c_str(), value) , 1000);
+		localIni.Save(iniFileName);
+	};
+
+	if (IsHotkey(HK_DECREASE_DEPTH))
 	{
 		if (--g_Config.iStereoDepth < 0)
 			g_Config.iStereoDepth = 0;
+		g_Config.oStereoPresets[g_Config.iStereoActivePreset].depth = g_Config.iStereoDepth;
+		savePreset("Depth", g_Config.iStereoDepth);
 	}
-	if (IsHotkey(HK_INCREASE_DEPTH, true))
+	if (IsHotkey(HK_INCREASE_DEPTH))
 	{
 		if (++g_Config.iStereoDepth > 100)
 			g_Config.iStereoDepth = 100;
+		g_Config.oStereoPresets[g_Config.iStereoActivePreset].depth = g_Config.iStereoDepth;
+		savePreset("Depth", g_Config.iStereoDepth);
 	}
-	if (IsHotkey(HK_DECREASE_CONVERGENCE, true))
+	if (IsHotkey(HK_DECREASE_CONVERGENCE))
 	{
 		g_Config.iStereoConvergence -= 5;
 		if (g_Config.iStereoConvergence < 0)
 			g_Config.iStereoConvergence = 0;
+		g_Config.oStereoPresets[g_Config.iStereoActivePreset].convergence = g_Config.iStereoConvergence;
+		savePreset("Convergence", g_Config.iStereoConvergence);
 	}
-	if (IsHotkey(HK_INCREASE_CONVERGENCE, true))
+	if (IsHotkey(HK_INCREASE_CONVERGENCE))
 	{
 		g_Config.iStereoConvergence += 5;
 		if (g_Config.iStereoConvergence > 500)
 			g_Config.iStereoConvergence = 500;
+		g_Config.oStereoPresets[g_Config.iStereoActivePreset].convergence = g_Config.iStereoConvergence;
+		savePreset("Convergence", g_Config.iStereoConvergence);
 	}
 
+	if (IsHotkey(HK_SWITCH_STEREOSCOPY_PRESET))
+	{
+		g_Config.iStereoActivePreset = !g_Config.iStereoActivePreset;
+		g_Config.iStereoConvergence = g_Config.oStereoPresets[g_Config.iStereoActivePreset].convergence;
+		g_Config.iStereoDepth = g_Config.oStereoPresets[g_Config.iStereoActivePreset].depth;
+	}
+	if (IsHotkey(HK_USE_STEREOSCOPY_PRESET_0))
+	{
+		g_Config.iStereoActivePreset = 0;
+		g_Config.iStereoConvergence = g_Config.oStereoPresets[g_Config.iStereoActivePreset].convergence;
+		g_Config.iStereoDepth = g_Config.oStereoPresets[g_Config.iStereoActivePreset].depth;
+	}
+	if (IsHotkey(HK_USE_STEREOSCOPY_PRESET_1))
+	{
+		g_Config.iStereoActivePreset = 1;
+		g_Config.iStereoConvergence = g_Config.oStereoPresets[g_Config.iStereoActivePreset].convergence;
+		g_Config.iStereoDepth = g_Config.oStereoPresets[g_Config.iStereoActivePreset].depth;
+	}
+	if (IsHotkey(HK_USE_STEREOSCOPY_PRESET_2))
+	{
+		g_Config.iStereoActivePreset = 2;
+		g_Config.iStereoConvergence = g_Config.oStereoPresets[g_Config.iStereoActivePreset].convergence;
+		g_Config.iStereoDepth = g_Config.oStereoPresets[g_Config.iStereoActivePreset].depth;
+	}
 	static float debugSpeed = 1.0f;
 	if (IsHotkey(HK_FREELOOK_DECREASE_SPEED, true))
 		debugSpeed /= 1.1f;
@@ -1490,3 +1535,61 @@ void CFrame::ParseHotkeys()
 	if (IsHotkey(HK_UNDO_SAVE_STATE))
 		State::UndoSaveState();
 }
+
+void CFrame::HandleFrameSkipHotkeys()
+{
+	static const int MAX_FRAME_SKIP_DELAY = 60;
+	static int frameStepCount = 0;
+	static const int FRAME_STEP_DELAY = 30;
+	static int holdFrameStepDelay = 1;
+	static int holdFrameStepDelayCount = 0;
+	static bool holdFrameStep = false;
+
+	if (IsHotkey(HK_FRAME_ADVANCE_DECREASE_SPEED))
+	{
+		++holdFrameStepDelay;
+		if (holdFrameStepDelay > MAX_FRAME_SKIP_DELAY)
+			holdFrameStepDelay = MAX_FRAME_SKIP_DELAY;
+	}
+	else if (IsHotkey(HK_FRAME_ADVANCE_INCREASE_SPEED))
+	{
+		--holdFrameStepDelay;
+		if (holdFrameStepDelay < 0)
+			holdFrameStepDelay = 0;
+	}
+	else if (IsHotkey(HK_FRAME_ADVANCE_RESET_SPEED))
+	{
+		holdFrameStepDelay = 1;
+	}
+	else if (IsHotkey(HK_FRAME_ADVANCE, true))
+	{
+		if (holdFrameStepDelayCount < holdFrameStepDelay && holdFrameStep)
+			++holdFrameStepDelayCount;
+
+		if ((frameStepCount == 0 || frameStepCount == FRAME_STEP_DELAY) && !holdFrameStep)
+		{
+			wxCommandEvent evt;
+			evt.SetId(IDM_FRAMESTEP);
+			CFrame::OnFrameStep(evt);
+			if (holdFrameStepDelay > 0 && frameStepCount == 0)
+				holdFrameStep = true;
+		}
+
+		if (frameStepCount < FRAME_STEP_DELAY)
+			++frameStepCount;
+
+		if (frameStepCount == FRAME_STEP_DELAY && holdFrameStep && holdFrameStepDelayCount >= holdFrameStepDelay)
+		{
+			holdFrameStep = false;
+			holdFrameStepDelayCount = 0;
+		}
+	}
+	else if (frameStepCount > 0)
+	{
+		// Reset values of frame advance to default
+		frameStepCount = 0;
+		holdFrameStep = false;
+		holdFrameStepDelayCount = 0;
+	}
+}
+

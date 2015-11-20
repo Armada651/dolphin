@@ -24,19 +24,22 @@ namespace
 	static std::mutex m_csCpuOccupied;
 }
 
-void CCPU::Init(int cpu_core)
+namespace CPU
+{
+
+void Init(int cpu_core)
 {
 	PowerPC::Init(cpu_core);
 	m_SyncEvent = nullptr;
 }
 
-void CCPU::Shutdown()
+void Shutdown()
 {
 	PowerPC::Shutdown();
 	m_SyncEvent = nullptr;
 }
 
-void CCPU::Run()
+void Run()
 {
 	std::lock_guard<std::mutex> lk(m_csCpuOccupied);
 	Host_UpdateDisasmDialog();
@@ -81,22 +84,22 @@ void CCPU::Run()
 	}
 }
 
-void CCPU::Stop()
+void Stop()
 {
 	PowerPC::Stop();
 	m_StepEvent.Set();
 }
 
-bool CCPU::IsStepping()
+bool IsStepping()
 {
 	return PowerPC::GetState() == PowerPC::CPU_STEPPING;
 }
 
-void CCPU::Reset()
+void Reset()
 {
 }
 
-void CCPU::StepOpcode(Common::Event *event)
+void StepOpcode(Common::Event* event)
 {
 	m_StepEvent.Set();
 	if (PowerPC::GetState() == PowerPC::CPU_STEPPING)
@@ -105,9 +108,9 @@ void CCPU::StepOpcode(Common::Event *event)
 	}
 }
 
-void CCPU::EnableStepping(const bool _bStepping)
+void EnableStepping(const bool stepping)
 {
-	if (_bStepping)
+	if (stepping)
 	{
 		PowerPC::Pause();
 		m_StepEvent.Reset();
@@ -139,31 +142,46 @@ void CCPU::EnableStepping(const bool _bStepping)
 	}
 }
 
-void CCPU::Break()
+void Break()
 {
 	EnableStepping(true);
 }
 
-bool CCPU::PauseAndLock(bool doLock, bool unpauseOnUnlock)
+bool PauseAndLock(bool do_lock, bool unpause_on_unlock)
 {
+	static bool s_have_fake_cpu_thread;
 	bool wasUnpaused = !IsStepping();
-	if (doLock)
+	if (do_lock)
 	{
 		// we can't use EnableStepping, that would causes deadlocks with both audio and video
 		PowerPC::Pause();
 		if (!Core::IsCPUThread())
+		{
 			m_csCpuOccupied.lock();
+			s_have_fake_cpu_thread = true;
+			Core::DeclareAsCPUThread();
+		}
+		else
+		{
+			s_have_fake_cpu_thread = false;
+		}
 	}
 	else
 	{
-		if (unpauseOnUnlock)
+		if (unpause_on_unlock)
 		{
 			PowerPC::Start();
 			m_StepEvent.Set();
 		}
 
-		if (!Core::IsCPUThread())
+		if (s_have_fake_cpu_thread)
+		{
+			Core::UndeclareAsCPUThread();
 			m_csCpuOccupied.unlock();
+			s_have_fake_cpu_thread = false;
+		}
 	}
 	return wasUnpaused;
+}
+
 }

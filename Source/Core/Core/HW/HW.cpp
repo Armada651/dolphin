@@ -47,7 +47,7 @@ namespace HW
 		DSP::Init(SConfig::GetInstance().bDSPHLE);
 		DVDInterface::Init();
 		GPFifo::Init();
-		CCPU::Init(SConfig::GetInstance().iCPUCore);
+		CPU::Init(SConfig::GetInstance().iCPUCore);
 		SystemTimers::Init();
 
 		if (SConfig::GetInstance().bWii)
@@ -56,27 +56,27 @@ namespace HW
 			DiscIO::cUIDsys::AccessInstance().UpdateLocation();
 			DiscIO::CSharedContent::AccessInstance().UpdateLocation();
 			WII_IPCInterface::Init();
-			WII_IPC_HLE_Interface::Init();
+			WII_IPC_HLE_Interface::Init(); // Depends on Memory
 		}
 	}
 
 	void Shutdown()
 	{
+		if (SConfig::GetInstance().bWii)
+		{
+			WII_IPC_HLE_Interface::Shutdown(); // Depends on Memory
+			WII_IPCInterface::Shutdown();
+			Common::ShutdownWiiRoot();
+		}
+
 		SystemTimers::Shutdown();
-		CCPU::Shutdown();
-		ExpansionInterface::Shutdown();
+		CPU::Shutdown();
 		DVDInterface::Shutdown();
 		DSP::Shutdown();
 		Memory::Shutdown();
+		ExpansionInterface::Shutdown();
 		SerialInterface::Shutdown();
 		AudioInterface::Shutdown();
-
-		if (SConfig::GetInstance().bWii)
-		{
-			WII_IPCInterface::Shutdown();
-			WII_IPC_HLE_Interface::Shutdown();
-			Common::ShutdownWiiRoot();
-		}
 
 		State::Shutdown();
 		CoreTiming::Shutdown();

@@ -39,6 +39,9 @@
 #if defined(HAVE_LIBEVDEV) && defined(HAVE_LIBUDEV)
 	#define CIFACE_USE_EVDEV
 #endif
+#if defined(USE_PIPES)
+	#define CIFACE_USE_PIPES
+#endif
 
 //
 // ControllerInterface

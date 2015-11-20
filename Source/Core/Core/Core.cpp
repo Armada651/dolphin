@@ -4,6 +4,7 @@
 
 #include <atomic>
 #include <cctype>
+#include <cstring>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -44,6 +45,9 @@
 #include "Core/HW/HW.h"
 #include "Core/HW/Memmap.h"
 #include "Core/HW/ProcessorInterface.h"
+#if defined(__LIBUSB__) || defined(_WIN32)
+#include "Core/HW/SI_GCAdapter.h"
+#endif
 #include "Core/HW/SystemTimers.h"
 #include "Core/HW/VideoInterface.h"
 #include "Core/HW/Wiimote.h"
@@ -74,11 +78,11 @@
 #define ThreadLocalStorage __thread
 #endif
 
-// TODO: ugly, remove
-bool g_aspect_wide;
-
 namespace Core
 {
+
+// TODO: ugly, remove
+bool g_aspect_wide;
 
 bool g_want_determinism;
 
@@ -263,7 +267,7 @@ void Stop()  // - Hammertime!
 	PowerPC::Stop();
 
 	// Kick it if it's waiting (code stepping wait loop)
-	CCPU::StepOpcode();
+	CPU::StepOpcode();
 
 	if (_CoreParameter.bCPUThread)
 	{
@@ -274,9 +278,12 @@ void Stop()  // - Hammertime!
 
 		g_video_backend->Video_ExitLoop();
 	}
+#if defined(__LIBUSB__) || defined(_WIN32)
+	SI_GCAdapter::ResetRumble();
+#endif
 }
 
-static void DeclareAsCPUThread()
+void DeclareAsCPUThread()
 {
 #ifdef ThreadLocalStorage
 	tls_is_cpu_thread = true;
@@ -288,7 +295,7 @@ static void DeclareAsCPUThread()
 #endif
 }
 
-static void UndeclareAsCPUThread()
+void UndeclareAsCPUThread()
 {
 #ifdef ThreadLocalStorage
 	tls_is_cpu_thread = false;
@@ -344,7 +351,7 @@ static void CpuThread()
 	#endif
 
 	// Enter CPU run loop. When we leave it - we are done.
-	CCPU::Run();
+	CPU::Run();
 
 	s_is_started = false;
 
@@ -608,11 +615,14 @@ void SetState(EState _State)
 	switch (_State)
 	{
 	case CORE_PAUSE:
-		CCPU::EnableStepping(true);  // Break
+		CPU::EnableStepping(true);  // Break
 		Wiimote::Pause();
+#if defined(__LIBUSB__) || defined(_WIN32)
+		SI_GCAdapter::ResetRumble();
+#endif
 		break;
 	case CORE_RUN:
-		CCPU::EnableStepping(false);
+		CPU::EnableStepping(false);
 		Wiimote::Resume();
 		break;
 	default:
@@ -628,10 +638,10 @@ EState GetState()
 
 	if (s_hardware_initialized)
 	{
-		if (CCPU::IsStepping())
+		if (CPU::IsStepping())
 			return CORE_PAUSE;
-		else
-			return CORE_RUN;
+
+		return CORE_RUN;
 	}
 
 	return CORE_UNINITIALIZED;
@@ -709,7 +719,7 @@ bool PauseAndLock(bool doLock, bool unpauseOnUnlock)
 		return true;
 
 	// first pause or unpause the CPU
-	bool wasUnpaused = CCPU::PauseAndLock(doLock, unpauseOnUnlock);
+	bool wasUnpaused = CPU::PauseAndLock(doLock, unpauseOnUnlock);
 	ExpansionInterface::PauseAndLock(doLock, unpauseOnUnlock);
 
 	// audio has to come after CPU, because CPU thread can wait for audio thread (m_throttle).
@@ -717,6 +727,10 @@ bool PauseAndLock(bool doLock, bool unpauseOnUnlock)
 
 	// video has to come after CPU, because CPU thread can wait for video thread (s_efbAccessRequested).
 	g_video_backend->PauseAndLock(doLock, unpauseOnUnlock);
+
+#if defined(__LIBUSB__) || defined(_WIN32)
+	SI_GCAdapter::ResetRumble();
+#endif
 	return wasUnpaused;
 }
 

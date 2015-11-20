@@ -4,12 +4,12 @@
 
 #include <algorithm>
 
+#include "Common/Assert.h"
 #include "Core/Core.h"
 #include "Core/FifoPlayer/FifoAnalyzer.h"
 #include "Core/FifoPlayer/FifoRecordAnalyzer.h"
 #include "Core/FifoPlayer/FifoRecorder.h"
 #include "Core/HW/Memmap.h"
-
 #include "VideoCommon/OpcodeDecoding.h"
 #include "VideoCommon/TextureDecoder.h"
 
@@ -94,12 +94,8 @@ void FifoRecordAnalyzer::DecodeOpcode(u8* data)
 		break;
 
 	case GX_LOAD_BP_REG:
-		{
-			m_DrawingObject = false;
-
-			u32 cmd2 = ReadFifo32(data);
-			BPCmd bp = FifoAnalyzer::DecodeBPCmd(cmd2, *m_BpMem);
-		}
+		m_DrawingObject = false;
+		ReadFifo32(data);
 		break;
 
 	default:

@@ -67,7 +67,6 @@ void VideoConfig::Load(const std::string& ini_file)
 	settings->Get("LogRenderTimeToFile", &bLogRenderTimeToFile, false);
 	settings->Get("OverlayStats", &bOverlayStats, false);
 	settings->Get("OverlayProjStats", &bOverlayProjStats, false);
-	settings->Get("ShowEFBCopyRegions", &bShowEFBCopyRegions, false);
 	settings->Get("DumpTextures", &bDumpTextures, 0);
 	settings->Get("HiresTextures", &bHiresTextures, 0);
 	settings->Get("ConvertHiresTextures", &bConvertHiresTextures, 0);
@@ -95,6 +94,16 @@ void VideoConfig::Load(const std::string& ini_file)
 	enhancements->Get("StereoDepth", &iStereoDepth, 20);
 	enhancements->Get("StereoConvergence", &iStereoConvergence, 20);
 	enhancements->Get("StereoSwapEyes", &bStereoSwapEyes, false);
+
+	//currently these settings are not saved in global config, so we could've initialized them directly
+	for (size_t i = 0; i < oStereoPresets.size(); ++i)
+	{
+		enhancements->Get(StringFromFormat("StereoConvergence_%zu", i), &oStereoPresets[i].depth, iStereoConvergence);
+		enhancements->Get(StringFromFormat("StereoDepth_%zu", i), &oStereoPresets[i].convergence, iStereoDepth);
+	}
+	enhancements->Get("StereoActivePreset", &iStereoActivePreset, 0);
+	iStereoConvergence = oStereoPresets[iStereoActivePreset].convergence;
+	iStereoDepth = oStereoPresets[iStereoActivePreset].depth;
 
 	IniFile::Section* hacks = iniFile.GetOrCreateSection("Hacks");
 	hacks->Get("EFBAccessEnable", &bEFBAccessEnable, true);
@@ -200,6 +209,17 @@ void VideoConfig::GameIniLoad()
 	CHECK_SETTING("Video_Enhancements", "StereoConvergence", iStereoConvergence);
 	CHECK_SETTING("Video_Enhancements", "StereoSwapEyes", bStereoSwapEyes);
 
+	//these are not overrides, they are per-game settings, hence no warning
+	IniFile::Section* enhancements = iniFile.GetOrCreateSection("Enhancements");
+	for (size_t i = 0; i < oStereoPresets.size(); ++i)
+	{
+		enhancements->Get(StringFromFormat("StereoConvergence_%zu", i), &oStereoPresets[i].depth, iStereoConvergence);
+		enhancements->Get(StringFromFormat("StereoDepth_%zu", i), &oStereoPresets[i].convergence, iStereoDepth);
+	}
+	enhancements->Get("StereoActivePreset", &iStereoActivePreset, 0);
+	iStereoConvergence = oStereoPresets[iStereoActivePreset].convergence;
+	iStereoDepth = oStereoPresets[iStereoActivePreset].depth;
+
 	CHECK_SETTING("Video_Stereoscopy", "StereoEFBMonoDepth", bStereoEFBMonoDepth);
 	CHECK_SETTING("Video_Stereoscopy", "StereoDepthPercentage", iStereoDepthPercentage);
 	CHECK_SETTING("Video_Stereoscopy", "StereoConvergenceMinimum", iStereoConvergenceMinimum);
@@ -273,7 +293,6 @@ void VideoConfig::Save(const std::string& ini_file)
 	settings->Set("UseFFV1", bUseFFV1);
 	settings->Set("EnablePixelLighting", bEnablePixelLighting);
 	settings->Set("FastDepthCalc", bFastDepthCalc);
-	settings->Set("ShowEFBCopyRegions", bShowEFBCopyRegions);
 	settings->Set("MSAA", iMultisampleMode);
 	settings->Set("SSAA", bSSAA);
 	settings->Set("EFBScale", iEFBScale);

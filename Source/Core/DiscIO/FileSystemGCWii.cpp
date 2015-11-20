@@ -11,8 +11,9 @@
 
 #include "Common/CommonTypes.h"
 #include "Common/FileUtil.h"
+#include "Common/MsgHandler.h"
 #include "Common/StringUtil.h"
-
+#include "Common/Logging/Log.h"
 #include "DiscIO/Filesystem.h"
 #include "DiscIO/FileSystemGCWii.h"
 #include "DiscIO/Volume.h"
@@ -149,33 +150,32 @@ bool CFileSystemGCWii::ExportApploader(const std::string& _rExportFolder) const
 
 u32 CFileSystemGCWii::GetBootDOLSize() const
 {
-	u32 DolOffset = m_rVolume->Read32(0x420, m_Wii) << GetOffsetShift();
-	u32 DolSize = 0, offset = 0, size = 0;
+	return GetBootDOLSize((u64)m_rVolume->Read32(0x420, m_Wii) << GetOffsetShift());
+}
+
+u32 CFileSystemGCWii::GetBootDOLSize(u64 dol_offset) const
+{
+	u32 dol_size = 0;
+	u32 offset = 0;
+	u32 size = 0;
 
 	// Iterate through the 7 code segments
 	for (u8 i = 0; i < 7; i++)
 	{
-		offset = m_rVolume->Read32(DolOffset + 0x00 + i * 4, m_Wii);
-		size   = m_rVolume->Read32(DolOffset + 0x90 + i * 4, m_Wii);
-		if (offset + size > DolSize)
-			DolSize = offset + size;
+		offset   = m_rVolume->Read32(dol_offset + 0x00 + i * 4, m_Wii);
+		size     = m_rVolume->Read32(dol_offset + 0x90 + i * 4, m_Wii);
+		dol_size = std::max(offset + size, dol_size);
 	}
 
 	// Iterate through the 11 data segments
 	for (u8 i = 0; i < 11; i++)
 	{
-		offset = m_rVolume->Read32(DolOffset + 0x1c + i * 4, m_Wii);
-		size   = m_rVolume->Read32(DolOffset + 0xac + i * 4, m_Wii);
-		if (offset + size > DolSize)
-			DolSize = offset + size;
+		offset   = m_rVolume->Read32(dol_offset + 0x1c + i * 4, m_Wii);
+		size     = m_rVolume->Read32(dol_offset + 0xac + i * 4, m_Wii);
+		dol_size = std::max(offset + size, dol_size);
 	}
-	return DolSize;
-}
 
-bool CFileSystemGCWii::GetBootDOL(u8* &buffer, u32 DolSize) const
-{
-	u32 DolOffset = m_rVolume->Read32(0x420, m_Wii) << GetOffsetShift();
-	return m_rVolume->Read(DolOffset, DolSize, buffer, m_Wii);
+	return dol_size;
 }
 
 bool CFileSystemGCWii::ExportDOL(const std::string& _rExportFolder) const
@@ -269,6 +269,18 @@ void CFileSystemGCWii::InitFileSystem()
 
 	if (!Root.IsDirectory())
 		return;
+
+	// 12 bytes (the size of a file entry) times 10 * 1024 * 1024 is 120 MiB,
+	// more than total RAM in a Wii. No file system should use anywhere near that much.
+	static const u32 ARBITRARY_FILE_SYSTEM_SIZE_LIMIT = 10 * 1024 * 1024;
+	if (Root.m_FileSize > ARBITRARY_FILE_SYSTEM_SIZE_LIMIT)
+	{
+		// Without this check, Dolphin can crash by trying to allocate too much
+		// memory when loading the file systems of certain malformed disc images.
+
+		ERROR_LOG(DISCIO, "File system is abnormally large! Aborting loading");
+		return;
+	}
 
 	if (m_FileInfoVector.size())
 		PanicAlert("Wtf?");

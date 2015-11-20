@@ -20,12 +20,24 @@
 namespace DiscIO
 {
 
+// Increment CACHE_REVISION if the enum below is modified (ISOFile.cpp & GameFile.cpp)
+enum class BlobType
+{
+	PLAIN,
+	DRIVE,
+	DIRECTORY,
+	GCZ,
+	CISO,
+	WBFS
+};
+
 class IBlobReader
 {
 public:
 	virtual ~IBlobReader() {}
 
-	virtual u64 GetRawSize() const  = 0;
+	virtual BlobType GetBlobType() const = 0;
+	virtual u64 GetRawSize() const = 0;
 	virtual u64 GetDataSize() const = 0;
 	// NOT thread-safe - can't call this from multiple threads.
 	virtual bool Read(u64 offset, u64 size, u8* out_ptr) = 0;
@@ -60,7 +72,6 @@ private:
 	int m_blocksize;
 	u8* m_cache[CACHE_SIZE];
 	u64 m_cache_tags[CACHE_SIZE];
-	int m_cache_age[CACHE_SIZE];
 };
 
 // Factory function - examines the path to choose the right type of IBlobReader, and returns one.

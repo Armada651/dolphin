@@ -19,6 +19,7 @@
 #include "Common/StringUtil.h"
 #include "Common/Thread.h"
 
+#include "Core/HW/WiimoteEmu/WiimoteHid.h"
 #include "Core/HW/WiimoteReal/WiimoteReal.h"
 
 //#define AUTHENTICATE_WIIMOTES
@@ -540,7 +541,7 @@ bool WiimoteWindows::ConnectInternal()
 
 	if (m_dev_handle == INVALID_HANDLE_VALUE)
 	{
-		m_dev_handle = 0;
+		m_dev_handle = nullptr;
 		return false;
 	}
 
@@ -591,7 +592,7 @@ void WiimoteWindows::DisconnectInternal()
 		return;
 
 	CloseHandle(m_dev_handle);
-	m_dev_handle = 0;
+	m_dev_handle = nullptr;
 
 #ifdef SHARE_WRITE_WIIMOTES
 	std::lock_guard<std::mutex> lk(g_connected_wiimotes_lock);
@@ -601,7 +602,7 @@ void WiimoteWindows::DisconnectInternal()
 
 WiimoteWindows::WiimoteWindows(const std::basic_string<TCHAR>& path) : m_devicepath(path)
 {
-	m_dev_handle = 0;
+	m_dev_handle = nullptr;
 	m_stack = MSBT_STACK_UNKNOWN;
 
 	m_hid_overlap_read = OVERLAPPED();
@@ -620,7 +621,7 @@ WiimoteWindows::~WiimoteWindows()
 
 bool WiimoteWindows::IsConnected() const
 {
-	return m_dev_handle != 0;
+	return m_dev_handle != nullptr;
 }
 
 // positive = read packet

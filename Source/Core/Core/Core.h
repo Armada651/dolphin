@@ -16,11 +16,11 @@
 
 #include "Common/CommonTypes.h"
 
-// TODO: ugly, remove
-extern bool g_aspect_wide;
-
 namespace Core
 {
+
+// TODO: ugly, remove
+extern bool g_aspect_wide;
 
 extern bool g_want_determinism;
 
@@ -40,6 +40,9 @@ enum EState
 bool Init();
 void Stop();
 void Shutdown();
+
+void DeclareAsCPUThread();
+void UndeclareAsCPUThread();
 
 std::string StopMessage(bool, const std::string&);
 

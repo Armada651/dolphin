@@ -24,9 +24,12 @@
 #include <utility>
 #include <vector>
 
+#include "Common/Assert.h"
+#include "Common/Common.h"
 #include "Common/CommonTypes.h"
 #include "Common/FileUtil.h"
 #include "Common/Flag.h"
+#include "Common/Logging/Log.h"
 
 // ewww
 #if _LIBCPP_VERSION || __GNUC__ >= 5
@@ -67,7 +70,6 @@ public:
 
 	void SetMode(Mode mode_) { mode = mode_; }
 	Mode GetMode() const { return mode; }
-	u8** GetPPtr() { return ptr; }
 
 	template <typename K, class V>
 	void Do(std::map<K, V>& x)
@@ -171,6 +173,12 @@ public:
 		DoVoid(x, count * sizeof(T));
 	}
 
+	template <typename T, std::size_t N>
+	void DoArray(T (&arr)[N])
+	{
+		DoArray(arr, static_cast<u32>(N));
+	}
+
 	void Do(Common::Flag& flag)
 	{
 		bool s = flag.IsSet();
@@ -226,7 +234,7 @@ public:
 
 		while (true)
 		{
-			u8 shouldExist = (list_cur ? 1 : 0);
+			u8 shouldExist = !!list_cur;
 			Do(shouldExist);
 			if (shouldExist == 1)
 			{

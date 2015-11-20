@@ -31,7 +31,7 @@ static void DoState(PointerWrap &p)
 	p.DoMarker("XF Memory");
 
 	// Texture decoder
-	p.DoArray(texMem, TMEM_SIZE);
+	p.DoArray(texMem);
 	p.DoMarker("texMem");
 
 	// FIFO
@@ -54,7 +54,7 @@ static void DoState(PointerWrap &p)
 	GeometryShaderManager::DoState(p);
 	p.DoMarker("GeometryShaderManager");
 
-	VertexManager::DoState(p);
+	VertexManagerBase::DoState(p);
 	p.DoMarker("VertexManager");
 
 	BoundingBox::DoState(p);

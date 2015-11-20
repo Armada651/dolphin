@@ -9,6 +9,7 @@
 
 #include "Common/CommonTypes.h"
 #include "Common/Event.h"
+#include "Common/ScopeGuard.h"
 #include "Common/StringUtil.h"
 #include "Common/Thread.h"
 #include "Common/Timer.h"
@@ -16,6 +17,7 @@
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
 #include "Core/CoreTiming.h"
+#include "Core/Host.h"
 #include "Core/Movie.h"
 #include "Core/State.h"
 #include "Core/HW/CPU.h"
@@ -66,7 +68,7 @@ static Common::Event g_compressAndDumpStateSyncEvent;
 static std::thread g_save_thread;
 
 // Don't forget to increase this after doing changes on the savestate system
-static const u32 STATE_VERSION = 47; // Last changed in PR 3045
+static const u32 STATE_VERSION = 49; // Last changed in PR 2149
 
 // Maps savestate versions to Dolphin versions.
 // Versions after 42 don't need to be added to this list,
@@ -117,7 +119,8 @@ void EnableCompression(bool compression)
 	g_use_compression = compression;
 }
 
-static std::string DoState(PointerWrap& p)
+// Returns true if state version matches current Dolphin state version, false otherwise.
+static bool DoStateVersion(PointerWrap& p, std::string* version_created_by)
 {
 	u32 version = STATE_VERSION;
 	{
@@ -127,15 +130,15 @@ static std::string DoState(PointerWrap& p)
 		version = cookie - COOKIE_BASE;
 	}
 
-	std::string version_created_by = scm_rev_str;
+	*version_created_by = scm_rev_str;
 	if (version > 42)
-		p.Do(version_created_by);
+		p.Do(*version_created_by);
 	else
-		version_created_by.clear();
+		version_created_by->clear();
 
 	if (version != STATE_VERSION)
 	{
-		if (version_created_by.empty() && s_old_versions.count(version))
+		if (version_created_by->empty() && s_old_versions.count(version))
 		{
 			// The savestate is from an old version that doesn't
 			// save the Dolphin version number to savestates, but
@@ -146,9 +149,21 @@ static std::string DoState(PointerWrap& p)
 			std::string oldest_version = version_range.first;
 			std::string newest_version = version_range.second;
 
-			version_created_by = "Dolphin " + oldest_version + " - " + newest_version;
+			*version_created_by = "Dolphin " + oldest_version + " - " + newest_version;
 		}
 
+		return false;
+	}
+
+	p.DoMarker("Version");
+	return true;
+}
+
+static std::string DoState(PointerWrap& p)
+{
+	std::string version_created_by;
+	if (!DoStateVersion(p, &version_created_by))
+	{
 		// because the version doesn't match, fail.
 		// this will trigger an OSD message like "Can't load state from other revisions"
 		// we could use the version numbers to maintain some level of backward compatibility, but currently don't.
@@ -156,14 +171,12 @@ static std::string DoState(PointerWrap& p)
 		return version_created_by;
 	}
 
-	p.DoMarker("Version");
-
 	// Begin with video backend, so that it gets a chance to clear its caches and writeback modified things to RAM
 	g_video_backend->DoState(p);
 	p.DoMarker("video_backend");
 
 	if (SConfig::GetInstance().bWii)
-		Wiimote::DoState(p.GetPPtr(), p.GetMode());
+		Wiimote::DoState(p);
 	p.DoMarker("Wiimote");
 
 	PowerPC::DoState(p);
@@ -280,8 +293,20 @@ struct CompressAndDumpState_args
 static void CompressAndDumpState(CompressAndDumpState_args save_args)
 {
 	std::lock_guard<std::mutex> lk(*save_args.buffer_mutex);
-	if (!save_args.wait)
+
+	// ScopeGuard is used here to ensure that g_compressAndDumpStateSyncEvent.Set()
+	// will be called and that it will happen after the IOFile is closed.
+	// Both ScopeGuard's and IOFile's finalization occur at respective object destruction time.
+	// As Local (stack) objects are destructed in the reverse order of construction and "ScopeGuard on_exit"
+	// is created before the "IOFile f", it is guaranteed that the file will be finalized before
+	// the ScopeGuard's finalization (i.e. "g_compressAndDumpStateSyncEvent.Set()" call).
+	Common::ScopeGuard on_exit([]()
+	{
 		g_compressAndDumpStateSyncEvent.Set();
+	});
+	// If it is not required to wait, we call finalizer early (and it won't be called again at destruction).
+	if (!save_args.wait)
+		on_exit.Exit();
 
 	const u8* const buffer_data = &(*(save_args.buffer_vector))[0];
 	const size_t buffer_size = (save_args.buffer_vector)->size();
@@ -313,7 +338,6 @@ static void CompressAndDumpState(CompressAndDumpState_args save_args)
 	if (!f)
 	{
 		Core::DisplayMessage("Could not save state", 2000);
-		g_compressAndDumpStateSyncEvent.Set();
 		return;
 	}
 
@@ -361,7 +385,7 @@ static void CompressAndDumpState(CompressAndDumpState_args save_args)
 	}
 
 	Core::DisplayMessage(StringFromFormat("Saved State to %s", filename.c_str()), 2000);
-	g_compressAndDumpStateSyncEvent.Set();
+	Host_UpdateMainFrame();
 }
 
 void SaveAs(const std::string& filename, bool wait)
@@ -424,6 +448,19 @@ bool ReadHeader(const std::string& filename, StateHeader& header)
 	return true;
 }
 
+std::string GetInfoStringOfSlot(int slot)
+{
+	std::string filename = MakeStateFilename(slot);
+	if (!File::Exists(filename))
+		return "Empty";
+
+	State::StateHeader header;
+	if (!ReadHeader(filename, header))
+		return "Unknown";
+
+	return Common::Timer::GetDateTimeFormatted(header.time);
+}
+
 static void LoadFileStateData(const std::string& filename, std::vector<u8>& ret_data)
 {
 	Flush();
@@ -481,7 +518,7 @@ static void LoadFileStateData(const std::string& filename, std::vector<u8>& ret_
 
 		if (!f.ReadBytes(&buffer[0], size))
 		{
-			PanicAlert("wtf? reading bytes: %i", (int)size);
+			PanicAlert("wtf? reading bytes: %zu", size);
 			return;
 		}
 	}

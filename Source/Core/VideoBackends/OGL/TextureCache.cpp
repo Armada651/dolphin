@@ -6,16 +6,18 @@
 #include <fstream>
 #include <vector>
 
+#include "Common/Common.h"
 #include "Common/CommonPaths.h"
 #include "Common/FileUtil.h"
 #include "Common/Hash.h"
 #include "Common/MemoryUtil.h"
 #include "Common/StringUtil.h"
 
+#include "Common/GL/GLInterfaceBase.h"
+
 #include "Core/HW/Memmap.h"
 
 #include "VideoBackends/OGL/FramebufferManager.h"
-#include "VideoBackends/OGL/GLInterfaceBase.h"
 #include "VideoBackends/OGL/ProgramShaderCache.h"
 #include "VideoBackends/OGL/Render.h"
 #include "VideoBackends/OGL/SamplerCache.h"
@@ -213,10 +215,8 @@ void TextureCache::TCacheEntry::Load(unsigned int width, unsigned int height,
 	TextureCache::SetStage();
 }
 
-void TextureCache::TCacheEntry::FromRenderTarget(u8* dstPointer, unsigned int dstFormat, u32 dstStride,
-	PEControl::PixelFormat srcFormat, const EFBRectangle& srcRect,
-	bool isIntensity, bool scaleByHalf, unsigned int cbufid,
-	const float *colmat)
+void TextureCache::TCacheEntry::FromRenderTarget(u8* dstPointer, PEControl::PixelFormat srcFormat, const EFBRectangle& srcRect,
+	bool scaleByHalf, unsigned int cbufid, const float *colmat)
 {
 	g_renderer->ResetAPIState(); // reset any game specific settings
 
@@ -262,25 +262,25 @@ void TextureCache::TCacheEntry::FromRenderTarget(u8* dstPointer, unsigned int ds
 
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-	if (g_ActiveConfig.bSkipEFBCopyToRam)
-	{
-		this->Zero(dstPointer);
-	}
-	else
-	{
-		TextureConverter::EncodeToRamFromTexture(
-			dstPointer,
-			this,
-			read_texture,
-			srcFormat == PEControl::Z24,
-			isIntensity,
-			scaleByHalf,
-			srcRect);
-	}
-
 	FramebufferManager::SetFramebuffer(0);
-
 	g_renderer->RestoreAPIState();
+}
+
+void TextureCache::CopyEFB(u8* dst, u32 format, u32 native_width, u32 bytes_per_row, u32 num_blocks_y, u32 memory_stride,
+		PEControl::PixelFormat srcFormat, const EFBRectangle& srcRect,
+		bool isIntensity, bool scaleByHalf)
+{
+	TextureConverter::EncodeToRamFromTexture(
+		dst,
+		format,
+		native_width,
+		bytes_per_row,
+		num_blocks_y,
+		memory_stride,
+		srcFormat,
+		isIntensity,
+		scaleByHalf,
+		srcRect);
 }
 
 TextureCache::TextureCache()

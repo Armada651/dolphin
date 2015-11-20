@@ -16,9 +16,6 @@
 #include "Core/HW/Memmap.h"
 #include "Core/HW/VideoInterface.h"
 
-#include "VideoBackends/OGL/GLInterfaceBase.h"
-#include "VideoBackends/OGL/GLUtil.h"
-#include "VideoBackends/OGL/GLExtensions/GLExtensions.h"
 #include "VideoBackends/Software/BPMemLoader.h"
 #include "VideoBackends/Software/Clipper.h"
 #include "VideoBackends/Software/DebugUtil.h"
@@ -26,6 +23,7 @@
 #include "VideoBackends/Software/OpcodeDecoder.h"
 #include "VideoBackends/Software/Rasterizer.h"
 #include "VideoBackends/Software/SWCommandProcessor.h"
+#include "VideoBackends/Software/SWOGLWindow.h"
 #include "VideoBackends/Software/SWRenderer.h"
 #include "VideoBackends/Software/SWStatistics.h"
 #include "VideoBackends/Software/SWVertexLoader.h"
@@ -67,22 +65,21 @@ std::string VideoSoftware::GetDisplayName() const
 	return "Software Renderer";
 }
 
+std::string VideoSoftware::GetConfigName() const
+{
+	return "gfx_software";
+}
+
 void VideoSoftware::ShowConfig(void *hParent)
 {
-	Host_ShowVideoConfig(hParent, GetDisplayName(), "gfx_software");
+	Host_ShowVideoConfig(hParent, GetDisplayName(), GetConfigName());
 }
 
 bool VideoSoftware::Initialize(void *window_handle)
 {
-	g_SWVideoConfig.Load((File::GetUserPath(D_CONFIG_IDX) + "gfx_software.ini").c_str());
+	g_SWVideoConfig.Load((File::GetUserPath(D_CONFIG_IDX) + GetConfigName() + ".ini").c_str());
 
-	InitInterface();
-	GLInterface->SetMode(GLInterfaceMode::MODE_DETECT);
-	if (!GLInterface->Create(window_handle, false))
-	{
-		INFO_LOG(VIDEO, "GLInterface::Create failed.");
-		return false;
-	}
+	SWOGLWindow::Init(window_handle);
 
 	InitBPMemory();
 	InitXFMemory();
@@ -160,31 +157,16 @@ void VideoSoftware::Shutdown()
 	// Do our OSD callbacks
 	OSD::DoCallbacks(OSD::OSD_SHUTDOWN);
 
-	GLInterface->Shutdown();
-	delete GLInterface;
-	GLInterface = nullptr;
+	SWOGLWindow::Shutdown();
 }
 
 void VideoSoftware::Video_Cleanup()
 {
-	GLInterface->ClearCurrent();
 }
 
 // This is called after Video_Initialize() from the Core
 void VideoSoftware::Video_Prepare()
 {
-	GLInterface->MakeCurrent();
-
-	// Init extension support.
-	if (!GLExtensions::Init())
-	{
-		ERROR_LOG(VIDEO, "GLExtensions::Init failed!Does your video card support OpenGL 2.0?");
-		return;
-	}
-
-	// Handle VSync on/off
-	GLInterface->SwapInterval(VSYNC_ENABLED);
-
 	// Do our OSD callbacks
 	OSD::DoCallbacks(OSD::OSD_INIT);
 
@@ -362,7 +344,7 @@ void VideoSoftware::RegisterCPMMIO(MMIO::Mapping* mmio, u32 base)
 // Draw messages on top of the screen
 unsigned int VideoSoftware::PeekMessages()
 {
-	return GLInterface->PeekMessages();
+	return SWOGLWindow::s_instance->PeekMessages();
 }
 
 }
