@@ -208,7 +208,7 @@ void VideoConfig::GameIniLoad()
 	CHECK_SETTING("Video_Enhancements", "MaxAnisotropy", iMaxAnisotropy);  // NOTE - this is x in (1 << x)
 	CHECK_SETTING("Video_Enhancements", "PostProcessingShader", sPostProcessingShader);
 
-	//these are not overrides, they are per-game settings, hence no warning
+	// These are not overrides, they are per-game stereoscopy parameters, hence no warning
 	IniFile::Section* stereoscopy = iniFile.GetOrCreateSection("Stereoscopy");
 	for (size_t i = 0; i < oStereoPresets.size(); ++i)
 	{
@@ -219,12 +219,13 @@ void VideoConfig::GameIniLoad()
 	iStereoConvergencePercentage = oStereoPresets[iStereoActivePreset].convergence;
 	iStereoDepth = oStereoPresets[iStereoActivePreset].depth;
 
+	stereoscopy->Get("StereoConvergence", &iStereoConvergence, 20);
+	stereoscopy->Get("StereoMetersInUnits", &iStereoMetersInUnits, 600);
+	stereoscopy->Get("StereoEFBMonoDepth", &bStereoEFBMonoDepth, false);
+
 	CHECK_SETTING("Video_Stereoscopy", "StereoMode", iStereoMode);
 	CHECK_SETTING("Video_Stereoscopy", "StereoDepth", iStereoDepth);
-	CHECK_SETTING("Video_Stereoscopy", "StereoConvergence", iStereoConvergence);
 	CHECK_SETTING("Video_Stereoscopy", "StereoSwapEyes", bStereoSwapEyes);
-	CHECK_SETTING("Video_Stereoscopy", "StereoEFBMonoDepth", bStereoEFBMonoDepth);
-	CHECK_SETTING("Video_Stereoscopy", "StereoMetersInUnits", iStereoMetersInUnits);
 
 	CHECK_SETTING("Video_Hacks", "EFBAccessEnable", bEFBAccessEnable);
 	CHECK_SETTING("Video_Hacks", "BBoxEnable", bBBoxEnable);
