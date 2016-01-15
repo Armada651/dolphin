@@ -145,12 +145,17 @@ bool cInterfaceWGL::ClearCurrent()
 // Update window width, size and etc. Called from Render.cpp
 void cInterfaceWGL::Update()
 {
-	RECT rcWindow;
-	GetClientRect(m_window_handle, &rcWindow);
+	RECT rcClient;
+	GetClientRect(m_window_handle, &rcClient);
 
 	// Get the new window width and height
-	s_backbuffer_width  = (rcWindow.right - rcWindow.left);
-	s_backbuffer_height = (rcWindow.bottom - rcWindow.top);
+	s_backbuffer_width  = (rcClient.right - rcClient.left);
+	s_backbuffer_height = (rcClient.bottom - rcClient.top);
+
+	RECT rcWindow;
+	GetWindowRect(m_window_handle, &rcWindow);
+	s_window_left = rcWindow.left;
+	s_window_top = rcWindow.top;
 }
 
 // Close backend

@@ -34,6 +34,7 @@ private:
 	GLuint m_uniform_src_rect;
 	GLuint m_uniform_time;
 	GLuint m_uniform_layer;
+	GLuint m_uniform_window;
 	std::string m_glsl_header;
 
 	std::unordered_map<std::string, GLuint> m_uniform_bindings;

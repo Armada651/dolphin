@@ -7,6 +7,7 @@
 #include "Common/FileUtil.h"
 #include "Common/StringUtil.h"
 
+#include "Common/GL/GLInterfaceBase.h"
 #include "Common/GL/GLUtil.h"
 
 #include "VideoBackends/OGL/FramebufferManager.h"
@@ -59,6 +60,8 @@ void OpenGLPostProcessing::BlitFromTexture(TargetRectangle src, TargetRectangle 
 		    src.GetWidth() / (float) src_width, src.GetHeight() / (float) src_height);
 	glUniform1ui(m_uniform_time, (GLuint)m_timer.GetTimeElapsed());
 	glUniform1i(m_uniform_layer, layer);
+	glUniform4i(m_uniform_window, GLInterface->GetWindowLeft(), GLInterface->GetWindowTop(),
+		GLInterface->GetBackBufferWidth(), GLInterface->GetBackBufferHeight());
 
 	if (m_config.IsDirty())
 	{
@@ -163,6 +166,7 @@ void OpenGLPostProcessing::ApplyShader()
 	m_uniform_time = glGetUniformLocation(m_shader.glprogid, "time");
 	m_uniform_src_rect = glGetUniformLocation(m_shader.glprogid, "src_rect");
 	m_uniform_layer = glGetUniformLocation(m_shader.glprogid, "layer");
+	m_uniform_window = glGetUniformLocation(m_shader.glprogid, "window");
 
 	for (const auto& it : m_config.GetOptions())
 	{
@@ -191,6 +195,8 @@ void OpenGLPostProcessing::CreateHeader()
 		"uniform uint time;\n"
 		// Layer
 		"uniform int layer;\n"
+		// Window
+		"uniform int4 window;\n"
 
 		// Interfacing functions
 		"float4 Sample()\n"
@@ -233,6 +239,16 @@ void OpenGLPostProcessing::CreateHeader()
 		"uint GetTime()\n"
 		"{\n"
 			"\treturn time;\n"
+		"}\n"
+
+		"int2 GetWindowPos()\n"
+		"{\n"
+			"\treturn window.xy;\n"
+		"}\n"
+
+		"int2 GetWindowSize()\n"
+		"{\n"
+			"\treturn window.zw;\n"
 		"}\n"
 
 		"void SetOutput(float4 color)\n"
