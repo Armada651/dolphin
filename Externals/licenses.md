@@ -44,6 +44,8 @@ Dolphin includes or links code of the following third-party software projects:
    [GPLv2](http://pearpc.cvs.sourceforge.net/viewvc/pearpc/pearpc/COPYING?view=markup) (with permission by the author to license under GPLv2+)
 - [mbed TLS](https://tls.mbed.org/):
    [Apache 2.0](https://github.com/ARMmbed/mbedtls/blob/development/LICENSE)
+- [OSVR](http://www.osvr.org/):
+   [Apache 2.0](https://github.com/OSVR/OSVR-Core/blob/master/LICENSE)
 - [PortAudio](http://www.portaudio.com/):
    [MIT](http://www.portaudio.com/license.html)
 - [PulseAudio](http://www.freedesktop.org/wiki/Software/PulseAudio/):

@@ -2,3 +2,12 @@
 	path = Externals/Qt
 	url = https://github.com/dolphin-emu/ext-win-qt.git
 	branch = master
+[submodule "Externals/OSVR/OSVR-Core"]
+	path = Externals/OSVR/OSVR-Core
+	url = https://github.com/OSVR/OSVR-Core.git
+[submodule "Externals/OSVR/libfunctionality"]
+	path = Externals/OSVR/libfunctionality
+	url = https://github.com/OSVR/libfunctionality.git
+[submodule "Externals/OSVR/jsoncpp"]
+	path = Externals/OSVR/jsoncpp
+	url = https://github.com/vrpn/jsoncpp.git

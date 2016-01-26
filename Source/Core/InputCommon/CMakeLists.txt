@@ -5,14 +5,14 @@ set(SRCS	ControllerEmu.cpp
 			ControllerInterface/ExpressionParser.cpp)
 set(LIBS	common)
 
-if(OSVR_FOUND)
+if(USE_OSVR)
 	set(LIBS	${LIBS}
 				osvrClientKit)
 
 	set(SRCS	${SRCS}
 				ControllerInterface/OSVR/OSVR.cpp)
 
-endif(OSVR_FOUND)
+endif(USE_OSVR)
 
 if(WIN32)
 	set(SRCS	${SRCS}
