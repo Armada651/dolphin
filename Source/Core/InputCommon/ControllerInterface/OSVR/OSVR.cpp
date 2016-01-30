@@ -140,13 +140,13 @@ Tracker::Tracker(const OSVR_ClientInterface& device, const char* path, u8 index)
 	osvrQuatSetIdentity(&m_pose_report.pose.rotation);
 	osvrRegisterPoseCallback(device, TrackerCallback, this);
 
-	// get supported buttons
+	// add position axes
 	for (int i = 0; i != sizeof(named_positions) / sizeof(*named_positions); ++i)
 	{
 		AddInput(new Position(i, m_pose_report.pose.translation.data[i]));
 	}
 
-	// get supported axes
+	// add orientation axes
 	for (int i = 0; i != sizeof(named_orientations) / sizeof(*named_orientations); ++i)
 	{
 		AddInput(new Orientation(i, m_pose_report.pose.rotation.data[i]));

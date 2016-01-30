@@ -22,12 +22,11 @@ static const char* const named_orientations[] =
 
 namespace VRTracker
 {
-	static ciface::Core::Device* s_device = nullptr;
-	static ControllerInterface::ControlReference* s_position_inputs[3];
-	static ControllerInterface::ControlReference* s_orientation_inputs[4];
+	static ciface::Core::Device::Input* s_position_inputs[3] = { nullptr };
+	static ciface::Core::Device::Input* s_orientation_inputs[4] = { nullptr };
 
-	static float s_initial_position[3];
-	static float s_initial_orientation[4];
+	static float s_initial_position[3] = { 0 };
+	static Quaternion s_initial_orientation;
 
 	void Shutdown()
 	{
@@ -37,7 +36,6 @@ namespace VRTracker
 		for (int i = 0; i < 4; i++)
 			delete s_orientation_inputs[i];
 
-		s_device = nullptr;
 		g_controller_interface.Shutdown();
 	}
 
@@ -46,72 +44,55 @@ namespace VRTracker
 	{
 		g_controller_interface.Initialize(hwnd);
 
-		// find the OSVR head tracker inputs
-		ciface::Core::DeviceQualifier devq("OSVR", 0, "me/head");
-
-		s_device = g_controller_interface.FindDevice(devq);
-
+		// find the VR head tracker inputs
 		for (int i = 0; i < 3; i++)
-		{
-			s_position_inputs[i] = new ControllerInterface::InputReference();
-			s_position_inputs[i]->expression = named_positions[i];
-			g_controller_interface.UpdateReference(s_position_inputs[i], devq);
-		}
+			s_position_inputs[i] = g_controller_interface.FindInput(named_positions[i], nullptr);
 
 		for (int i = 0; i < 4; i++)
-		{
-			s_orientation_inputs[i] = new ControllerInterface::InputReference();
-			s_orientation_inputs[i]->expression = named_orientations[i];
-			g_controller_interface.UpdateReference(s_orientation_inputs[i], devq);
-		}
+			s_orientation_inputs[i] = g_controller_interface.FindInput(named_orientations[i], nullptr);
+
+		Quaternion::LoadIdentity(s_initial_orientation);
 	}
 
 	void ResetView()
 	{
-		if (!s_device)
-			return;
-
-		s_device->UpdateInput();
-
 		for (int i = 0; i < 3; i++)
-			s_initial_position[i] = (float)s_position_inputs[i]->State();
+			s_initial_position[i] = (float)s_position_inputs[i]->GetState();
 
 		for (int i = 0; i < 4; i++)
-			s_initial_orientation[i] = (float)s_orientation_inputs[i]->State();
+			s_initial_orientation.data[i] = (float)s_orientation_inputs[i]->GetState();
 	}
 
 	void GetTransformMatrix(Matrix44& mtx)
 	{
+		float position[3] = { 0 };
+		Quaternion worldQuat, initialQuat, orientation;
+		Matrix33 worldMtx;
+
+		// Set indentity matrix
 		Matrix44::LoadIdentity(mtx);
-
-		if (!s_device)
-			return;
-
-		// Make sure we have the most recent state available
-		s_device->UpdateInput();
-
-		float position[3], orientation[4];
+		Quaternion::LoadIdentity(orientation);
 
 		// Get the inverted position states offset from the initial position
 		for (int i = 0; i < 3; i++)
-			position[i] = -((float)s_position_inputs[i]->State() - s_initial_position[i]);
+		{
+			if (s_position_inputs[i])
+				position[i] = -((float)s_position_inputs[i]->GetState() - s_initial_position[i]);
+		}
 
 		// Get the orientation quaternion
 		for (int i = 0; i < 4; i++)
-			orientation[i] = (float)s_orientation_inputs[i]->State();
+		{
+			if (s_orientation_inputs[i])
+				orientation.data[i] = (float)s_orientation_inputs[i]->GetState();
+		}
 
-		Quaternion worldQuat, initialQuat, orientationQuat;
-		Matrix33 worldMtx;
-
-		// Get the initial and current orientation quaternions
-		Quaternion::Set(orientationQuat, orientation);
-		Quaternion::Set(initialQuat, s_initial_orientation);
-
-		// Rotate the current orientation by the inverse of the initial orientation
+		// Rotate the current orientation by the inverse of the initial orientation heading,
+		// this makes sure we maintain the initial heading for the headset.
 		Quaternion::Invert(initialQuat);
 		initialQuat.data[1] = 0.0f;
 		initialQuat.data[3] = 0.0f;
-		Quaternion::Multiply(initialQuat, orientationQuat, worldQuat);
+		Quaternion::Multiply(initialQuat, orientation, worldQuat);
 
 		// Invert the quaternion to get the world orientation
 		Quaternion::Invert(worldQuat);
