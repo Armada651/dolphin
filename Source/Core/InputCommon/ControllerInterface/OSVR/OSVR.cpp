@@ -101,6 +101,12 @@ void Init(std::vector<Core::Device*>& devices)
 {
 	s_context = osvrClientInit("org.dolphin-emu.InputCommon");
 
+	if (osvrClientCheckStatus(s_context) != OSVR_RETURN_SUCCESS)
+	{
+		DeInit();
+		return;
+	}
+
 	int i = 0;
 	for (; i < sizeof(tracker_paths) / sizeof(*tracker_paths); ++i)
 	{
