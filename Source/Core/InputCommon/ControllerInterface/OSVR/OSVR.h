@@ -31,8 +31,8 @@ private:
 		Orientation(u8 index, const double& axis) : m_index(index), m_axis(axis) {}
 		ControlState GetState() const;
 	private:
-		const double& m_axis;
 		const u8 m_index;
+		const double& m_axis;
 	};
 
 	class Position : public Core::Device::Input
@@ -43,8 +43,8 @@ private:
 		Position(u8 index, const double& axis) : m_index(index), m_axis(axis) {}
 		ControlState GetState() const;
 	private:
-		const double& m_axis;
 		const u8 m_index;
+		const double& m_axis;
 	};
 
 	static void TrackerCallback(void* userdata, const OSVR_TimeValue* timestamp, const OSVR_PoseReport* report);
@@ -76,8 +76,8 @@ private:
 		Button(u8 index, const u8& button) : m_index(index), m_button(button) {}
 		ControlState GetState() const;
 	private:
-		const u8& m_button;
 		const u8 m_index;
+		const u8& m_button;
 	};
 
 	class Axis : public Core::Device::Input
@@ -87,9 +87,9 @@ private:
 		Axis(u8 index, const double& axis, bool negative) : m_index(index), m_axis(axis), m_negative(negative) {}
 		ControlState GetState() const;
 	private:
+		const u8 m_index;
 		const double& m_axis;
 		const bool m_negative;
-		const u8 m_index;
 	};
 
 	class Trigger : public Core::Device::Input
@@ -99,8 +99,8 @@ private:
 		Trigger(u8 index, const double& trigger) : m_index(index), m_trigger(trigger) {}
 		ControlState GetState() const;
 	private:
-		const double& m_trigger;
 		const u8 m_index;
+		const double& m_trigger;
 	};
 
 	static void ButtonCallback(void *userdata, const struct OSVR_TimeValue *timestamp, const struct OSVR_ButtonReport *report);

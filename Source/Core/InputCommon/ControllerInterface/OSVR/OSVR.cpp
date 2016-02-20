@@ -107,7 +107,7 @@ void Init(std::vector<Core::Device*>& devices)
 		return;
 	}
 
-	int i = 0;
+	size_t i = 0;
 	for (; i < sizeof(tracker_paths) / sizeof(*tracker_paths); ++i)
 	{
 		OSVR_ClientInterface device;
