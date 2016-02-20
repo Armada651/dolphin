@@ -11,6 +11,9 @@ if (NOT OSVR_FOUND)
 		/usr/include
 		/usr/include/osvr
 		/usr/include/osvr/ClientKit
+		/usr/local/include
+		/usr/local/include/osvr
+		/usr/local/include/osvr/ClientKit
 		Externals/OSVR/inc/osvr/ClientKit
 	)
 
@@ -18,6 +21,7 @@ if (NOT OSVR_FOUND)
 		PATHS
 		/lib
 		/usr/lib
+		/usr/local/lib
 		Externals/OSVR/lib64
 	)
 
