@@ -25,9 +25,6 @@ namespace VRTracker
 	static ciface::Core::Device::Input* s_position_inputs[3] = { nullptr };
 	static ciface::Core::Device::Input* s_orientation_inputs[4] = { nullptr };
 
-	static float s_initial_position[3] = { 0 };
-	static Quaternion s_initial_orientation;
-
 	void Shutdown()
 	{
 		for (int i = 0; i < 3; i++)
@@ -50,57 +47,44 @@ namespace VRTracker
 
 		for (int i = 0; i < 4; i++)
 			s_orientation_inputs[i] = g_controller_interface.FindInput(named_orientations[i], nullptr);
-
-		Quaternion::LoadIdentity(s_initial_orientation);
 	}
 
 	void ResetView()
 	{
-		for (int i = 0; i < 3; i++)
-			s_initial_position[i] = (float)s_position_inputs[i]->GetState();
-
-		for (int i = 0; i < 4; i++)
-			s_initial_orientation.data[i] = (float)s_orientation_inputs[i]->GetState();
+		// TODO: Allow the user to reset the center.
 	}
 
 	void GetTransformMatrix(Matrix44& mtx)
 	{
 		float position[3] = { 0 };
-		Quaternion worldQuat, initialQuat, orientation;
-		Matrix33 worldMtx;
+		Quaternion orientQuat;
+		Matrix33 orientMtx;
 
 		// Set indentity matrix
 		Matrix44::LoadIdentity(mtx);
-		Quaternion::LoadIdentity(orientation);
+		Quaternion::LoadIdentity(orientQuat);
 
 		// Get the inverted position states offset from the initial position
 		for (int i = 0; i < 3; i++)
 		{
 			if (s_position_inputs[i])
-				position[i] = -((float)s_position_inputs[i]->GetState() - s_initial_position[i]);
+				position[i] = -(float)s_position_inputs[i]->GetState();
 		}
 
 		// Get the orientation quaternion
 		for (int i = 0; i < 4; i++)
 		{
 			if (s_orientation_inputs[i])
-				orientation.data[i] = (float)s_orientation_inputs[i]->GetState();
+				orientQuat.data[i] = (float)s_orientation_inputs[i]->GetState();
 		}
 
-		// Rotate the current orientation by the inverse of the initial orientation heading,
-		// this makes sure we maintain the initial heading for the headset.
-		Quaternion::Invert(initialQuat);
-		initialQuat.data[1] = 0.0f;
-		initialQuat.data[3] = 0.0f;
-		Quaternion::Multiply(initialQuat, orientation, worldQuat);
-
 		// Invert the quaternion to get the world orientation
-		Quaternion::Invert(worldQuat);
-		Matrix33::LoadQuaternion(worldMtx, worldQuat);
+		Quaternion::Invert(orientQuat);
+		Matrix33::LoadQuaternion(orientMtx, orientQuat);
 
 		// Translate the transformation matrix by the position
 		Matrix44 translateMtx, transformationMtx;
-		Matrix44::LoadMatrix33(transformationMtx, worldMtx);
+		Matrix44::LoadMatrix33(transformationMtx, orientMtx);
 		Matrix44::Translate(translateMtx, position);
 		Matrix44::Multiply(transformationMtx, translateMtx, mtx);
 	}
