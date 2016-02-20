@@ -99,25 +99,22 @@ static const char* const named_triggers[OSVR_NUM_TRIGGERS] =
 
 void Init(std::vector<Core::Device*>& devices)
 {
-	s_context = osvrClientInit("org.dolphin-emu.InputCommon");
+	s_context = osvrClientInit("org.dolphin-emu.inputcommon");
 
-	if (osvrClientCheckStatus(s_context) != OSVR_RETURN_SUCCESS)
+	if (osvrClientCheckStatus(s_context) == OSVR_RETURN_SUCCESS)
 	{
-		DeInit();
-		return;
-	}
+		size_t i = 0;
+		for (; i < sizeof(tracker_paths) / sizeof(*tracker_paths); ++i)
+		{
+			OSVR_ClientInterface device;
+			if (osvrClientGetInterface(s_context, tracker_paths[i], &device) == OSVR_RETURN_SUCCESS)
+				devices.push_back(new Tracker(device, tracker_paths[i], i));
+		}
 
-	size_t i = 0;
-	for (; i < sizeof(tracker_paths) / sizeof(*tracker_paths); ++i)
-	{
 		OSVR_ClientInterface device;
-		if (osvrClientGetInterface(s_context, tracker_paths[i], &device) == OSVR_RETURN_SUCCESS)
-			devices.push_back(new Tracker(device, tracker_paths[i], i));
+		if (osvrClientGetInterface(s_context, "/controller", &device) == OSVR_RETURN_SUCCESS)
+			devices.push_back(new Controller(device, "/controller", i));
 	}
-
-	OSVR_ClientInterface device;
-	if (osvrClientGetInterface(s_context, "/controller", &device) == OSVR_RETURN_SUCCESS)
-		devices.push_back(new Controller(device, "/controller", i));
 }
 
 void DeInit()
