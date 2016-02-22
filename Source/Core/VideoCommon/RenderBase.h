@@ -27,6 +27,7 @@
 #include "VideoCommon/FPSCounter.h"
 #include "VideoCommon/VideoBackendBase.h"
 #include "VideoCommon/VideoCommon.h"
+#include "VideoCommon/VRTracker.h"
 
 class PostProcessingShaderImplementation;
 
@@ -176,6 +177,7 @@ protected:
 	FPSCounter m_fps_counter;
 
 	static std::unique_ptr<PostProcessingShaderImplementation> m_post_processor;
+	static std::unique_ptr<VRTrackerOSVR> m_vr_tracker;
 
 private:
 	static PEControl::PixelFormat prev_efb_format;

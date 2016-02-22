@@ -43,6 +43,7 @@
 #include "VideoCommon/RenderBase.h"
 #include "VideoCommon/Statistics.h"
 #include "VideoCommon/TextureCacheBase.h"
+#include "VideoCommon/VertexShaderManager.h"
 #include "VideoCommon/VideoConfig.h"
 #include "VideoCommon/XFMemory.h"
 
@@ -73,6 +74,7 @@ int Renderer::s_backbuffer_width;
 int Renderer::s_backbuffer_height;
 
 std::unique_ptr<PostProcessingShaderImplementation> Renderer::m_post_processor;
+std::unique_ptr<VRTrackerOSVR> Renderer::m_vr_tracker;
 
 TargetRectangle Renderer::target_rc;
 
@@ -425,10 +427,13 @@ void Renderer::DrawDebugText()
 
 void Renderer::UpdateDrawRectangle(int backbuffer_width, int backbuffer_height)
 {
-	float FloatGLWidth = (g_ActiveConfig.iStereoMode == STEREO_VR) ? (float)backbuffer_width / 2.0f : (float)backbuffer_width;
+	float FloatGLWidth = (float)backbuffer_width;
 	float FloatGLHeight = (float)backbuffer_height;
 	float FloatXOffset = 0;
 	float FloatYOffset = 0;
+
+	if (g_ActiveConfig.iStereoMode == STEREO_VR && m_vr_tracker)
+		m_vr_tracker->GetViewport(&FloatGLWidth, &FloatGLHeight);
 
 	// The rendering window size
 	const float WinWidth = FloatGLWidth;
@@ -594,6 +599,13 @@ void Renderer::RecordVideoMemory()
 
 void Renderer::Swap(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, const EFBRectangle& rc, float Gamma)
 {
+	if (g_ActiveConfig.iStereoMode == STEREO_VR)
+	{
+		Matrix44 mtx;
+		m_vr_tracker->GetTransformMatrix(mtx);
+		VertexShaderManager::SetViewTransform(mtx);
+	}
+
 	// TODO: merge more generic parts into VideoCommon
 	g_renderer->SwapImpl(xfbAddr, fbWidth, fbStride, fbHeight, rc, Gamma);
 

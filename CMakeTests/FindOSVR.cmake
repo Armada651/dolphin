@@ -6,18 +6,27 @@
 
 if (NOT OSVR_FOUND)
 
-	find_path(OSVR_INCLUDE_DIR NAMES ClientKitC.h
+	find_path(OSVR_INCLUDE_DIR
+		NAMES
+		ClientKitC.h
+		RenderManager.h
 		PATHS
 		/usr/include
 		/usr/include/osvr
 		/usr/include/osvr/ClientKit
+		/usr/include/osvr/RenderKit
 		/usr/local/include
 		/usr/local/include/osvr
 		/usr/local/include/osvr/ClientKit
+		/usr/local/include/osvr/RenderKit
 		Externals/OSVR/inc/osvr/ClientKit
+		Externals/OSVR/inc/osvr/RenderKit
 	)
 
-	find_library(OSVR_LIBRARIES NAMES osvrClientKit
+	find_library(OSVR_LIBRARIES
+		NAMES
+		osvrClientKit
+		osvrRenderManager
 		PATHS
 		/lib
 		/usr/lib

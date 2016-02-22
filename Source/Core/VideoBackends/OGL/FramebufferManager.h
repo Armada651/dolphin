@@ -95,6 +95,10 @@ public:
 
 	static void PokeEFB(EFBAccessType type, const EfbPokeData* points, size_t num_points);
 
+	// Virtual-reality staging buffers
+	static std::vector<GLuint> m_vrFramebuffers;
+	static std::vector<GLuint> m_vrRenderbuffers;
+
 private:
 	std::unique_ptr<XFBSourceBase> CreateXFBSource(unsigned int target_width, unsigned int target_height, unsigned int layers) override;
 	void GetTargetSize(unsigned int *width, unsigned int *height) override;

@@ -696,6 +696,7 @@ void Renderer::Shutdown()
 
 	s_raster_font.reset();
 	m_post_processor.reset();
+	m_vr_tracker.reset();
 
 	OpenGL_DeleteAttributelessVAO();
 }
@@ -706,8 +707,12 @@ void Renderer::Init()
 	g_framebuffer_manager = std::make_unique<FramebufferManager>(s_target_width, s_target_height,
 			s_MSAASamples);
 
+	m_vr_tracker = std::make_unique<VRTrackerOSVR>(API_OPENGL);
 	m_post_processor = std::make_unique<OpenGLPostProcessing>();
 	s_raster_font = std::make_unique<RasterFont>();
+
+	if (g_ActiveConfig.iStereoMode == STEREO_VR)
+		m_vr_tracker->SetRenderBuffers(&FramebufferManager::m_vrRenderbuffers[0], &FramebufferManager::m_vrRenderbuffers[1]);
 
 	OpenGL_CreateAttributelessVAO();
 }
@@ -1102,7 +1107,7 @@ void Renderer::ClearScreen(const EFBRectangle& rc, bool colorEnable, bool alphaE
 
 void Renderer::BlitScreen(TargetRectangle src, TargetRectangle dst, GLuint src_texture, int src_width, int src_height)
 {
-	if (g_ActiveConfig.iStereoMode == STEREO_SBS || g_ActiveConfig.iStereoMode == STEREO_TAB || g_ActiveConfig.iStereoMode == STEREO_VR)
+	if (g_ActiveConfig.iStereoMode == STEREO_SBS || g_ActiveConfig.iStereoMode == STEREO_TAB)
 	{
 		TargetRectangle leftRc, rightRc;
 
@@ -1114,6 +1119,19 @@ void Renderer::BlitScreen(TargetRectangle src, TargetRectangle dst, GLuint src_t
 
 		m_post_processor->BlitFromTexture(src, leftRc, src_texture, src_width, src_height, 0);
 		m_post_processor->BlitFromTexture(src, rightRc, src_texture, src_width, src_height, 1);
+	}
+	else if (g_ActiveConfig.iStereoMode == STEREO_VR)
+	{
+		// Blit stereoscopic view to the headset
+		glBindFramebuffer(GL_FRAMEBUFFER, FramebufferManager::m_vrFramebuffers[0]);
+		m_post_processor->BlitFromTexture(src, dst, src_texture, src_width, src_height, 0);
+		glBindFramebuffer(GL_FRAMEBUFFER, FramebufferManager::m_vrFramebuffers[1]);
+		m_post_processor->BlitFromTexture(src, dst, src_texture, src_width, src_height, 1);
+		m_vr_tracker->Present();
+
+		// Blit monoscopic view to our own render window
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		m_post_processor->BlitFromTexture(src, dst, src_texture, src_width, src_height);
 	}
 	else
 	{
@@ -1472,6 +1490,9 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 
 			g_framebuffer_manager.reset();
 			g_framebuffer_manager = std::make_unique<FramebufferManager>(s_target_width, s_target_height, s_MSAASamples);
+
+			if (g_ActiveConfig.iStereoMode == STEREO_VR)
+				m_vr_tracker->SetRenderBuffers(&FramebufferManager::m_vrRenderbuffers[0], &FramebufferManager::m_vrRenderbuffers[1]);
 
 			PixelShaderManager::SetEfbScaleChanged();
 		}

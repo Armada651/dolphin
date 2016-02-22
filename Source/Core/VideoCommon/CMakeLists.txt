@@ -58,6 +58,11 @@ if(LIBAV_FOUND OR WIN32)
 	set(SRCS ${SRCS} AVIDump.cpp)
 endif()
 
+if(OSVR_FOUND)
+	set(LIBS	${LIBS}
+				osvrRenderManager)
+endif()
+
 add_dolphin_library(videocommon "${SRCS}" "${LIBS}")
 
 if(LIBAV_FOUND)

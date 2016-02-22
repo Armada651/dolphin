@@ -13,7 +13,6 @@ static OSVR_ClientContext s_context;
 
 static const char* const tracker_paths[] =
 {
-	"/me/head",
 	"/me/hands/left",
 	"/me/hands/right"
 };

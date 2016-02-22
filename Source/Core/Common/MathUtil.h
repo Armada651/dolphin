@@ -227,6 +227,7 @@ public:
 	static void LoadIdentity(Matrix44& mtx);
 	static void LoadMatrix33(Matrix44& mtx, const Matrix33& m33);
 	static void Set(Matrix44& mtx, const float mtxArray[16]);
+	static void Set(Matrix44& mtx, const double mtxArray[16]);
 
 	static void Translate(Matrix44& mtx, const float vec[3]);
 	static void Shear(Matrix44& mtx, const float a, const float b = 0);

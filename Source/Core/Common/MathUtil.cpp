@@ -367,6 +367,14 @@ void Matrix44::Set(Matrix44& mtx, const float mtxArray[16])
 	}
 }
 
+void Matrix44::Set(Matrix44& mtx, const double mtxArray[16])
+{
+	for (int i = 0; i < 16; ++i)
+	{
+		mtx.data[i] = (float)mtxArray[i];
+	}
+}
+
 void Matrix44::Translate(Matrix44& mtx, const float vec[3])
 {
 	LoadIdentity(mtx);

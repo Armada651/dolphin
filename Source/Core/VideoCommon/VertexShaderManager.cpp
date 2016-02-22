@@ -12,7 +12,6 @@
 #include "Common/ChunkFile.h"
 #include "Common/CommonFuncs.h"
 #include "Common/CommonTypes.h"
-#include "Common/MathUtil.h"
 #include "Common/Logging/Log.h"
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
@@ -546,10 +545,9 @@ void VertexShaderManager::SetConstants()
 
 			if (g_ActiveConfig.iStereoMode == STEREO_VR)
 			{
-				Matrix44 tempMtx, tranformMtx;
-				VRTracker::GetTransformMatrix(tranformMtx);
+				Matrix44 tempMtx;
 				Matrix44::Set(tempMtx, g_fProjectionMatrix);
-				Matrix44::Multiply(tempMtx, tranformMtx, projMtx);
+				Matrix44::Multiply(tempMtx, s_VRTransformationMatrix, projMtx);
 			}
 		}
 
@@ -726,7 +724,7 @@ void VertexShaderManager::RotateView(float x, float y)
 	Matrix33::RotateY(my, s_fViewRotation[0]);
 	Matrix33::Multiply(mx, my, s_viewRotationMatrix);
 
-	// reverse rotation
+	// reverse rotation(void*)
 	Matrix33::RotateX(mx, -s_fViewRotation[1]);
 	Matrix33::RotateY(my, -s_fViewRotation[0]);
 	Matrix33::Multiply(my, mx, s_viewInvRotationMatrix);
@@ -736,12 +734,17 @@ void VertexShaderManager::RotateView(float x, float y)
 
 void VertexShaderManager::ResetView()
 {
-	VRTracker::ResetView();
-
 	memset(s_fViewTranslationVector, 0, sizeof(s_fViewTranslationVector));
 	Matrix33::LoadIdentity(s_viewRotationMatrix);
 	Matrix33::LoadIdentity(s_viewInvRotationMatrix);
 	s_fViewRotation[0] = s_fViewRotation[1] = 0.0f;
+
+	bProjectionChanged = true;
+}
+
+void VertexShaderManager::SetViewTransform(const Matrix44& mtx)
+{
+	Matrix44::Set(s_VRTransformationMatrix, mtx.data);
 
 	bProjectionChanged = true;
 }
