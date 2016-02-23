@@ -46,10 +46,6 @@ GLuint FramebufferManager::m_EfbPokes_VBO;
 GLuint FramebufferManager::m_EfbPokes_VAO;
 SHADER FramebufferManager::m_EfbPokes;
 
-// Virtual-reality staging buffers
-std::vector<GLuint> FramebufferManager::m_vrFramebuffers(2);
-std::vector<GLuint> FramebufferManager::m_vrRenderbuffers(2);
-
 FramebufferManager::FramebufferManager(int targetWidth, int targetHeight, int msaaSamples)
 {
 	m_xfbFramebuffer = 0;
@@ -407,23 +403,6 @@ FramebufferManager::FramebufferManager(int targetWidth, int targetHeight, int ms
 	glEnableVertexAttribArray(SHADER_COLOR1_ATTRIB);
 	glVertexAttribIPointer(SHADER_COLOR1_ATTRIB, 1, GL_INT, sizeof(EfbPokeData), (void*)offsetof(EfbPokeData, data));
 
-	// Generate staging render buffers for virtual reality, if enabled
-	if (g_ActiveConfig.iStereoMode == STEREO_VR)
-	{
-		glGenFramebuffers(m_EFBLayers, m_vrFramebuffers.data());
-		glGenRenderbuffers(m_EFBLayers, m_vrRenderbuffers.data());
-
-		for (unsigned int i = 0; i < m_EFBLayers; i++)
-		{
-			glBindTexture(GL_TEXTURE_2D, m_vrRenderbuffers[i]);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_targetWidth, m_targetHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-
-			// Bind textures to staging framebuffer, we don't need a depth attachment
-			glBindFramebuffer(GL_FRAMEBUFFER, m_vrFramebuffers[i]);
-			FramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_vrRenderbuffers[i], 0);
-		}
-	}
-
 	if (GLInterface->GetMode() == GLInterfaceMode::MODE_OPENGL)
 		glEnable(GL_PROGRAM_POINT_SIZE);
 }
@@ -470,10 +449,6 @@ FramebufferManager::~FramebufferManager()
 	m_EfbPokes_VBO = 0;
 	m_EfbPokes_VAO = 0;
 	m_EfbPokes.Destroy();
-
-	// Virtual-reality staging buffers
-	glDeleteFramebuffers(m_vrFramebuffers.size(), m_vrFramebuffers.data());
-	glDeleteBuffers(m_vrRenderbuffers.size(), m_vrRenderbuffers.data());
 }
 
 GLuint FramebufferManager::GetEFBColorTexture(const EFBRectangle& sourceRc)

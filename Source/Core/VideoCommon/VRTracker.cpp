@@ -6,35 +6,21 @@
 #include "VideoCommon/VideoCommon.h"
 #include "VideoCommon/VRTracker.h"
 
-// Typeless redeclaration to prevent the need to include the OpenGL header.
-class RenderBufferOpenGL {
-public:
-	unsigned int colorBufferName;
-	unsigned int depthStencilBufferName;
-};
-
-// Typeless redeclaration to prevent the need to include the D3D11 header.
-class RenderBufferD3D11 {
-public:
-	void* colorBuffer;
-	void* colorBufferView;
-	void* depthStencilBuffer;
-	void* depthStencilView;
-};
+typedef unsigned int GLuint;
+#include <osvr/RenderKit/GraphicsLibraryOpenGL.h>
 
 VRTrackerOSVR::VRTrackerOSVR(API_TYPE api)
 	: m_api(api)
 {
 	m_context = osvrClientInit("org.dolphin-emu.videocommon");
-	m_render = osvr::renderkit::createRenderManager(m_context, api == API_D3D ? "Direct3D11" : "OpenGL");
+	m_render.reset(osvr::renderkit::createRenderManager(m_context, api == API_D3D ? "Direct3D11" : "OpenGL"));
 
-	// Open the display and make sure this worked.
+	// TODO: Make sure this worked.
 	m_render->OpenDisplay();
 }
 
 VRTrackerOSVR::~VRTrackerOSVR()
 {
-	delete m_render;
 	osvrClientShutdown(m_context);
 }
 
@@ -60,15 +46,13 @@ void VRTrackerOSVR::SetRenderBuffers(void* leftBuffer, void* rightBuffer)
 		{
 			if (m_api == API_D3D)
 			{
-				RenderBufferD3D11* renderBuffer = new RenderBufferD3D11();
-				renderBuffer->colorBuffer = buffers[i];
-				rb.D3D11 = (osvr::renderkit::RenderBufferD3D11*)renderBuffer;
+				// TODO: Implement D3D OSVR support.
 			}
 			else
 			{
-				RenderBufferOpenGL* renderBuffer = new RenderBufferOpenGL();
+				osvr::renderkit::RenderBufferOpenGL* renderBuffer = new osvr::renderkit::RenderBufferOpenGL();
 				renderBuffer->colorBufferName = *(unsigned int*)buffers[i];
-				rb.OpenGL = (osvr::renderkit::RenderBufferOpenGL*)renderBuffer;
+				rb.OpenGL = renderBuffer;
 			}
 			m_buffers.push_back(rb);
 		}

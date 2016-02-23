@@ -13,7 +13,7 @@ class VRTrackerOSVR
 private:
 	API_TYPE m_api;
 	OSVR_ClientContext m_context;
-	osvr::renderkit::RenderManager* m_render;
+	std::unique_ptr<osvr::renderkit::RenderManager> m_render;
 	std::vector<osvr::renderkit::RenderInfo> m_renderInfo;
 	std::vector<osvr::renderkit::RenderBuffer> m_buffers;
 

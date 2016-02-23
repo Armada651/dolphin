@@ -80,6 +80,10 @@ static bool s_efbCacheValid[2][EFB_CACHE_WIDTH * EFB_CACHE_HEIGHT];
 static bool s_efbCacheIsCleared = false;
 static std::vector<u32> s_efbCache[2][EFB_CACHE_WIDTH * EFB_CACHE_HEIGHT]; // 2 for PEEK_Z and PEEK_COLOR
 
+// Virtual-reality staging buffers
+static std::vector<GLuint> s_vrFramebuffers(2);
+static std::vector<GLuint> s_vrRenderbuffers(2);
+
 static void APIENTRY ErrorCallback( GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const char* message, const void* userParam)
 {
 	const char *s_source;
@@ -698,6 +702,10 @@ void Renderer::Shutdown()
 	m_post_processor.reset();
 	m_vr_tracker.reset();
 
+	// Virtual-reality staging buffers
+	glDeleteFramebuffers(2, s_vrFramebuffers.data());
+	glDeleteBuffers(2, s_vrRenderbuffers.data());
+
 	OpenGL_DeleteAttributelessVAO();
 }
 
@@ -711,8 +719,39 @@ void Renderer::Init()
 	m_post_processor = std::make_unique<OpenGLPostProcessing>();
 	s_raster_font = std::make_unique<RasterFont>();
 
+    glGenFramebuffers(2, s_vrFramebuffers.data());
+    glGenTextures(2, s_vrRenderbuffers.data());
 	if (g_ActiveConfig.iStereoMode == STEREO_VR)
-		m_vr_tracker->SetRenderBuffers(&FramebufferManager::m_vrRenderbuffers[0], &FramebufferManager::m_vrRenderbuffers[1]);
+	{
+        // Determine the appropriate size for the frame buffer to be used for
+        // this eye.
+        float width, height;
+        m_vr_tracker->GetViewport(&width, &height);
+
+	    for (size_t i = 0; i < 2; i++) {
+	    	glBindFramebuffer(GL_FRAMEBUFFER, s_vrFramebuffers[i]);
+
+	        // "Bind" the newly created texture : all future texture
+	        // functions will modify this texture glActiveTexture(GL_TEXTURE0);
+	        glBindTexture(GL_TEXTURE_2D, s_vrRenderbuffers[i]);
+
+	        // Give an empty image to OpenGL ( the last "0" means "empty" )
+	        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (int)width, (int)height, 0, GL_RGBA,
+	                     GL_UNSIGNED_BYTE, 0);
+
+	        // Bilinear filtering
+	        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	        glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, s_vrRenderbuffers[i], 0);
+	        GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
+	        glDrawBuffers(1, DrawBuffers);
+	    }
+
+		m_vr_tracker->SetRenderBuffers(&s_vrRenderbuffers[0], &s_vrRenderbuffers[1]);
+	}
 
 	OpenGL_CreateAttributelessVAO();
 }
@@ -1107,6 +1146,8 @@ void Renderer::ClearScreen(const EFBRectangle& rc, bool colorEnable, bool alphaE
 
 void Renderer::BlitScreen(TargetRectangle src, TargetRectangle dst, GLuint src_texture, int src_width, int src_height)
 {
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
 	if (g_ActiveConfig.iStereoMode == STEREO_SBS || g_ActiveConfig.iStereoMode == STEREO_TAB)
 	{
 		TargetRectangle leftRc, rightRc;
@@ -1123,14 +1164,14 @@ void Renderer::BlitScreen(TargetRectangle src, TargetRectangle dst, GLuint src_t
 	else if (g_ActiveConfig.iStereoMode == STEREO_VR)
 	{
 		// Blit stereoscopic view to the headset
-		glBindFramebuffer(GL_FRAMEBUFFER, FramebufferManager::m_vrFramebuffers[0]);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, s_vrFramebuffers[0]);
 		m_post_processor->BlitFromTexture(src, dst, src_texture, src_width, src_height, 0);
-		glBindFramebuffer(GL_FRAMEBUFFER, FramebufferManager::m_vrFramebuffers[1]);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, s_vrFramebuffers[1]);
 		m_post_processor->BlitFromTexture(src, dst, src_texture, src_width, src_height, 1);
 		m_vr_tracker->Present();
 
 		// Blit monoscopic view to our own render window
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 		m_post_processor->BlitFromTexture(src, dst, src_texture, src_width, src_height);
 	}
 	else
@@ -1492,7 +1533,7 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight, co
 			g_framebuffer_manager = std::make_unique<FramebufferManager>(s_target_width, s_target_height, s_MSAASamples);
 
 			if (g_ActiveConfig.iStereoMode == STEREO_VR)
-				m_vr_tracker->SetRenderBuffers(&FramebufferManager::m_vrRenderbuffers[0], &FramebufferManager::m_vrRenderbuffers[1]);
+				m_vr_tracker->SetRenderBuffers(&s_vrRenderbuffers[0], &s_vrRenderbuffers[1]);
 
 			PixelShaderManager::SetEfbScaleChanged();
 		}
