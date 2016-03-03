@@ -324,6 +324,9 @@ static T GenerateVertexShader(API_TYPE api_type)
 			out.Write("o.colors_1 = color1;\n");
 	}
 
+	// Some games apply a depth bias by setting the range and/or far value beyond 2^24-1.
+	out.Write("o.pos.z = o.pos.z * " I_PIXELCENTERCORRECTION".z + o.pos.w * " I_PIXELCENTERCORRECTION".w;\n");
+
 	//write the true depth value, if the game uses depth textures pixel shaders will override with the correct values
 	//if not early z culling will improve speed
 	if (g_ActiveConfig.backend_info.bSupportsClipControl)
