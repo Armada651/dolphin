@@ -984,6 +984,11 @@ PFNDOLCOPYIMAGESUBDATAPROC dolCopyImageSubData;
 // ARB_shader_storage_buffer_object
 PFNDOLSHADERSTORAGEBLOCKBINDINGPROC dolShaderStorageBlockBinding;
 
+// NV_depth_buffer_float
+PFNDOLDEPTHRANGEDNVPROC dolDepthRangedNV;
+PFNDOLCLEARDEPTHDNVPROC dolClearDepthdNV;
+PFNDOLDEPTHBOUNDSDNVPROC dolDepthBoundsdNV;
+
 // Creates a GLFunc object that requires a feature
 #define GLFUNC_REQUIRES(x, y)                                                                      \
   {                                                                                                \
@@ -1838,6 +1843,11 @@ const GLFunc gl_function_array[] = {
 
     // ARB_shader_storage_buffer_object
     GLFUNC_REQUIRES(glShaderStorageBlockBinding, "ARB_shader_storage_buffer_object !VERSION_4_3"),
+
+    // NV_depth_buffer_float
+    GLFUNC_REQUIRES(glDepthRangedNV, "GL_NV_depth_buffer_float"),
+    GLFUNC_REQUIRES(glClearDepthdNV, "GL_NV_depth_buffer_float"),
+    GLFUNC_REQUIRES(glDepthBoundsdNV, "GL_NV_depth_buffer_float"),
 };
 
 namespace GLExtensions
@@ -2064,7 +2074,7 @@ static void InitExtensionList()
           //"GL_EXT_gpu_shader4",
           //"GL_APPLE_flush_buffer_range",
           "GL_ARB_color_buffer_float",
-          //"GL_NV_depth_buffer_float",
+          "GL_NV_depth_buffer_float",
           "GL_ARB_texture_float",
           //"GL_EXT_packed_float",
           //"GL_EXT_texture_shared_exponent",
