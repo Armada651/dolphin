@@ -95,7 +95,7 @@ FramebufferManager::FramebufferManager(int targetWidth, int targetHeight, int ms
 
     glBindTexture(m_textureType, m_efbDepth);
     glTexParameteri(m_textureType, GL_TEXTURE_MAX_LEVEL, 0);
-    glTexImage3D(m_textureType, 0, GL_DEPTH_COMPONENT32F, m_targetWidth, m_targetHeight,
+    glTexImage3D(m_textureType, 0, GL_DEPTH_COMPONENT24, m_targetWidth, m_targetHeight,
                  m_EFBLayers, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
 
     glBindTexture(m_textureType, m_efbColorSwap);
@@ -120,7 +120,7 @@ FramebufferManager::FramebufferManager(int targetWidth, int targetHeight, int ms
                                   m_targetHeight, m_EFBLayers, false);
 
         glBindTexture(m_textureType, m_efbDepth);
-        glTexStorage3DMultisample(m_textureType, m_msaaSamples, GL_DEPTH_COMPONENT32F,
+        glTexStorage3DMultisample(m_textureType, m_msaaSamples, GL_DEPTH_COMPONENT24,
                                   m_targetWidth, m_targetHeight, m_EFBLayers, false);
 
         glBindTexture(m_textureType, m_efbColorSwap);
@@ -135,7 +135,7 @@ FramebufferManager::FramebufferManager(int targetWidth, int targetHeight, int ms
                                 m_targetHeight, m_EFBLayers, false);
 
         glBindTexture(m_textureType, m_efbDepth);
-        glTexImage3DMultisample(m_textureType, m_msaaSamples, GL_DEPTH_COMPONENT32F, m_targetWidth,
+        glTexImage3DMultisample(m_textureType, m_msaaSamples, GL_DEPTH_COMPONENT24, m_targetWidth,
                                 m_targetHeight, m_EFBLayers, false);
 
         glBindTexture(m_textureType, m_efbColorSwap);
@@ -155,7 +155,7 @@ FramebufferManager::FramebufferManager(int targetWidth, int targetHeight, int ms
                                   m_targetHeight, false);
 
         glBindTexture(m_textureType, m_efbDepth);
-        glTexStorage2DMultisample(m_textureType, m_msaaSamples, GL_DEPTH_COMPONENT32F,
+        glTexStorage2DMultisample(m_textureType, m_msaaSamples, GL_DEPTH_COMPONENT24,
                                   m_targetWidth, m_targetHeight, false);
 
         glBindTexture(m_textureType, m_efbColorSwap);
@@ -170,7 +170,7 @@ FramebufferManager::FramebufferManager(int targetWidth, int targetHeight, int ms
                                 m_targetHeight, false);
 
         glBindTexture(m_textureType, m_efbDepth);
-        glTexImage2DMultisample(m_textureType, m_msaaSamples, GL_DEPTH_COMPONENT32F, m_targetWidth,
+        glTexImage2DMultisample(m_textureType, m_msaaSamples, GL_DEPTH_COMPONENT24, m_targetWidth,
                                 m_targetHeight, false);
 
         glBindTexture(m_textureType, m_efbColorSwap);
