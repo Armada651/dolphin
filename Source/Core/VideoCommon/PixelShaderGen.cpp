@@ -341,6 +341,8 @@ static void WriteTevRegular(ShaderCode& out, const char* components, int bias, i
                             int shift);
 static void SampleTexture(ShaderCode& out, const char* texcoords, const char* texswap, int texmap,
                           bool stereo, APIType ApiType);
+static void FetchTexel(ShaderCode& out, const char* texcoords, const char* texswap, int texmap,
+                       bool stereo, APIType ApiType);
 static void WriteAlphaTest(ShaderCode& out, const pixel_shader_uid_data* uid_data, APIType ApiType,
                            DSTALPHA_MODE dstAlphaMode, bool per_pixel_depth);
 static void WriteFog(ShaderCode& out, const pixel_shader_uid_data* uid_data);
@@ -676,7 +678,7 @@ ShaderCode GeneratePixelShaderCode(DSTALPHA_MODE dstAlphaMode, APIType ApiType,
         out.Write("\ttempcoord = int2(0, 0);\n");
 
       out.Write("\tint3 iindtex%d = ", i);
-      SampleTexture(out, "float2(tempcoord)", "abg", texmap, uid_data->stereo, ApiType);
+      FetchTexel(out, "int2(tempcoord)", "abg", texmap, uid_data->stereo, ApiType);
     }
   }
 
@@ -1154,6 +1156,19 @@ static void SampleTexture(ShaderCode& out, const char* texcoords, const char* te
   else
     out.Write("iround(255.0 * texture(samp[%d], float3(%s.xy * " I_TEXDIMS "[%d].xy, %s))).%s;\n",
               texmap, texcoords, texmap, stereo ? "layer" : "0.0", texswap);
+}
+
+static void FetchTexel(ShaderCode& out, const char* texcoords, const char* texswap, int texmap,
+  bool stereo, APIType ApiType)
+{
+  out.SetConstantsUsed(C_TEXDIMS + texmap, C_TEXDIMS + texmap);
+
+  if (ApiType == APIType::D3D)
+    out.Write("iround(255.0 * Tex[%d].Load(int4(%s.xy / 128, %s, 0))).%s;\n",
+      texmap, texcoords, stereo ? "layer" : "0", texswap);
+  else
+    out.Write("iround(255.0 * texelFetch(samp[%d], int3(%s.xy / 128, %s), 0)).%s;\n",
+      texmap, texcoords, stereo ? "layer" : "0", texswap);
 }
 
 static const char* tevAlphaFuncsTable[] = {
