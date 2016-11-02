@@ -28,17 +28,17 @@ enum TextureFormat
   GX_TF_C14X2 = 0xA,
   GX_TF_CMPR = 0xE,
 
-  _GX_TF_ZTF = 0x10,  // flag for Z texture formats (used internally by dolphin)
+  _GX_TF_ZTF = 0x10,  // Flag for Z texture formats (used internally by Dolphin)
 
-  // Depth texture formats (which directly map to the equivalent colour format above.)
+  // Depth texture formats (which directly map to the equivalent colour format above).
   GX_TF_Z8 = 0x1 | _GX_TF_ZTF,
   GX_TF_Z16 = 0x3 | _GX_TF_ZTF,
   GX_TF_Z24X8 = 0x6 | _GX_TF_ZTF,
 
-  _GX_TF_CTF = 0x20,  // flag for copy-texture-format only (used internally by dolphin)
+  _GX_TF_CTF = 0x20,  // Flag for copy-texture-format only (used internally by Dolphin)
 
-  // These are extra formats that can be used when copying from efb,
-  // they use one of texel formats from above, but pack diffrent data into them.
+  // These are extra formats that can be used when copying from the EFB.
+  // They use one of the texel formats from above, but pack different data into them.
   GX_CTF_R4 = 0x0 | _GX_TF_CTF,
   GX_CTF_RA4 = 0x2 | _GX_TF_CTF,
   GX_CTF_RA8 = 0x3 | _GX_TF_CTF,
@@ -51,9 +51,9 @@ enum TextureFormat
   GX_CTF_RG8 = 0xB | _GX_TF_CTF,
   GX_CTF_GB8 = 0xC | _GX_TF_CTF,
 
-  // extra depth texture formats that can be used for efb copies.
+  // Extra depth texture formats that can be used for EFB copies.
   GX_CTF_Z4 = 0x0 | _GX_TF_ZTF | _GX_TF_CTF,
-  GX_CTF_Z8H = 0x8 | _GX_TF_ZTF | _GX_TF_CTF,  // This produces an identical result to to GX_TF_Z8
+  GX_CTF_Z8H = 0x8 | _GX_TF_ZTF | _GX_TF_CTF,  // This produces an identical result to GX_TF_Z8
   GX_CTF_Z8M = 0x9 | _GX_TF_ZTF | _GX_TF_CTF,
   GX_CTF_Z8L = 0xA | _GX_TF_ZTF | _GX_TF_CTF,
   GX_CTF_Z16R = 0xB | _GX_TF_ZTF | _GX_TF_CTF,  // Reversed version of GX_TF_Z16
