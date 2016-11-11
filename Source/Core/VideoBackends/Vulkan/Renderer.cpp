@@ -216,7 +216,7 @@ u32 Renderer::AccessEFB(EFBAccessType type, u32 x, u32 y, u32 poke_data)
   else  // if (type == PEEK_Z)
   {
     // Depth buffer is inverted for improved precision near far plane
-    float depth = 1.0f - FramebufferManager::GetInstance()->PeekEFBDepth(x, y);
+    float depth = FramebufferManager::GetInstance()->PeekEFBDepth(x, y);
     u32 ret = 0;
 
     if (bpmem.zcontrol.pixel_format == PEControl::RGB565_Z16)
@@ -253,7 +253,7 @@ void Renderer::PokeEFB(EFBAccessType type, const EfbPokeData* points, size_t num
     {
       // Convert to floating-point depth.
       const EfbPokeData& point = points[i];
-      float depth = (1.0f - float(point.data & 0xFFFFFF) / 16777216.0f);
+      float depth = float(point.data & 0xFFFFFF) / 16777216.0f;
       FramebufferManager::GetInstance()->PokeEFBDepth(point.x, point.y, depth);
     }
   }
@@ -354,7 +354,7 @@ void Renderer::ClearScreen(const EFBRectangle& rc, bool color_enable, bool alpha
   clear_color_value.color.float32[1] = static_cast<float>((color >> 8) & 0xFF) / 255.0f;
   clear_color_value.color.float32[2] = static_cast<float>((color >> 0) & 0xFF) / 255.0f;
   clear_color_value.color.float32[3] = static_cast<float>((color >> 24) & 0xFF) / 255.0f;
-  clear_depth_value.depthStencil.depth = (1.0f - (static_cast<float>(z & 0xFFFFFF) / 16777216.0f));
+  clear_depth_value.depthStencil.depth = static_cast<float>(z & 0xFFFFFF) / 16777216.0f;
 
   // If we're not in a render pass (start of the frame), we can use a clear render pass
   // to discard the data, rather than loading and then clearing.
@@ -1260,22 +1260,22 @@ void Renderer::SetDepthMode()
     new_ds_state.compare_op = VK_COMPARE_OP_NEVER;
     break;
   case ZMode::LESS:
-    new_ds_state.compare_op = VK_COMPARE_OP_GREATER;
+    new_ds_state.compare_op = VK_COMPARE_OP_LESS;
     break;
   case ZMode::EQUAL:
     new_ds_state.compare_op = VK_COMPARE_OP_EQUAL;
     break;
   case ZMode::LEQUAL:
-    new_ds_state.compare_op = VK_COMPARE_OP_GREATER_OR_EQUAL;
+    new_ds_state.compare_op = VK_COMPARE_OP_LESS_OR_EQUAL;
     break;
   case ZMode::GREATER:
-    new_ds_state.compare_op = VK_COMPARE_OP_LESS;
+    new_ds_state.compare_op = VK_COMPARE_OP_GREATER;
     break;
   case ZMode::NEQUAL:
     new_ds_state.compare_op = VK_COMPARE_OP_NOT_EQUAL;
     break;
   case ZMode::GEQUAL:
-    new_ds_state.compare_op = VK_COMPARE_OP_LESS_OR_EQUAL;
+    new_ds_state.compare_op = VK_COMPARE_OP_GREATER_OR_EQUAL;
     break;
   case ZMode::ALWAYS:
     new_ds_state.compare_op = VK_COMPARE_OP_ALWAYS;
@@ -1639,8 +1639,16 @@ void Renderer::SetViewport()
   float min_depth, max_depth;
   if (g_ActiveConfig.backend_info.bSupportsDepthClamp)
   {
-    min_depth = 1.0f - GX_MAX_DEPTH;
-    max_depth = 1.0f;
+    if (xfmem.viewport.zRange < 0.0f)
+    {
+      min_depth = 0.0f;
+      max_depth = GX_MAX_DEPTH;
+    }
+    else
+    {
+      min_depth = GX_MAX_DEPTH;
+      max_depth = 0.0f;
+    }
   }
   else
   {
@@ -1650,8 +1658,8 @@ void Renderer::SetViewport()
                                             0.0f, 16777215.0f) /
                      16777216.0f;
     float far_val = MathUtil::Clamp<float>(xfmem.viewport.farZ, 0.0f, 16777215.0f) / 16777216.0f;
-    min_depth = 1.0f - near_val;
-    max_depth = 1.0f - far_val;
+    min_depth = near_val;
+    max_depth = far_val;
   }
 
   VkViewport viewport = {x, y, width, height, min_depth, max_depth};
