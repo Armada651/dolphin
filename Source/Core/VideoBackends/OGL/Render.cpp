@@ -469,6 +469,8 @@ Renderer::Renderer()
 
   // Clip distance support is useless without a method to clamp the depth range
   g_Config.backend_info.bSupportsDepthClamp = GLExtensions::Supports("GL_ARB_depth_clamp");
+  g_Config.backend_info.bSupportsOversizedDepthRanges =
+      GLExtensions::Supports("GL_NV_depth_buffer_float");
 
   // Desktop OpenGL supports bitfield manulipation and dynamic sampler indexing if it supports
   // shader5. OpenGL ES 3.1 supports it implicitly without an extension
@@ -707,7 +709,7 @@ Renderer::Renderer()
                                    g_ogl_config.gl_renderer, g_ogl_config.gl_version),
                   5000);
 
-  WARN_LOG(VIDEO, "Missing OGL Extensions: %s%s%s%s%s%s%s%s%s%s%s%s%s%s",
+  WARN_LOG(VIDEO, "Missing OGL Extensions: %s%s%s%s%s%s%s%s%s%s%s%s%s%s%s",
            g_ActiveConfig.backend_info.bSupportsDualSourceBlend ? "" : "DualSourceBlend ",
            g_ActiveConfig.backend_info.bSupportsPrimitiveRestart ? "" : "PrimitiveRestart ",
            g_ActiveConfig.backend_info.bSupportsEarlyZ ? "" : "EarlyZ ",
@@ -720,7 +722,8 @@ Renderer::Renderer()
            g_ActiveConfig.backend_info.bSupportsGSInstancing ? "" : "GSInstancing ",
            g_ActiveConfig.backend_info.bSupportsClipControl ? "" : "ClipControl ",
            g_ogl_config.bSupportsCopySubImage ? "" : "CopyImageSubData ",
-           g_ActiveConfig.backend_info.bSupportsDepthClamp ? "" : "DepthClamp ");
+           g_ActiveConfig.backend_info.bSupportsDepthClamp ? "" : "DepthClamp ",
+           g_ActiveConfig.backend_info.bSupportsOversizedDepthRanges ? "" : "DepthRangedNV ");
 
   s_last_multisamples = g_ActiveConfig.iMultisamples;
   s_MSAASamples = s_last_multisamples;
@@ -1158,7 +1161,8 @@ void Renderer::SetViewport()
     glViewport(iceilf(X), iceilf(Y), iceilf(Width), iceilf(Height));
   }
 
-  if (!g_ActiveConfig.backend_info.bSupportsDepthClamp)
+  if (!g_ActiveConfig.backend_info.bSupportsOversizedDepthRanges &&
+      !g_ActiveConfig.backend_info.bSupportsDepthClamp)
   {
     // There's no way to support oversized depth ranges in this situation. Let's just clamp the
     // range to the maximum value supported by the console GPU and hope for the best.
@@ -1183,7 +1187,10 @@ void Renderer::SetViewport()
   }
 
   // Set the reversed depth range.
-  glDepthRangef(max_depth, min_depth);
+  if (g_ActiveConfig.backend_info.bSupportsOversizedDepthRanges)
+    glDepthRangedNV(max_depth, min_depth);
+  else
+    glDepthRangef(max_depth, min_depth);
 }
 
 void Renderer::ClearScreen(const EFBRectangle& rc, bool colorEnable, bool alphaEnable, bool zEnable,
