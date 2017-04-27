@@ -204,6 +204,7 @@ struct VideoConfig final
     bool bSupportsDualSourceBlend;
     bool bSupportsPrimitiveRestart;
     bool bSupportsOversizedViewports;
+    bool bSupportsOversizedDepthRanges;
     bool bSupportsGeometryShaders;
     bool bSupportsComputeShaders;
     bool bSupports3DVision;

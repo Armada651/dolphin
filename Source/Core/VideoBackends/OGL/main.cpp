@@ -99,6 +99,7 @@ void VideoBackend::InitBackendInfo()
   g_Config.backend_info.bSupportsGPUTextureDecoding = true;
 
   // Overwritten in Render.cpp later
+  g_Config.backend_info.bSupportsOversizedDepthRanges = false;
   g_Config.backend_info.bSupportsDualSourceBlend = true;
   g_Config.backend_info.bSupportsPrimitiveRestart = true;
   g_Config.backend_info.bSupportsPaletteConversion = true;
