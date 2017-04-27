@@ -71,7 +71,7 @@ ShaderCode GenerateShader(APIType api_type, const UidData* uid_data)
     if (api_type == APIType::D3D || api_type == APIType::Vulkan)
       out.Write("texcol.x = 1.0 - texcol.x;\n");
 
-    out.Write("  int depth = int(texcol.x * 16777216.0);\n"
+    out.Write("  int depth = int(texcol.x * 16777215.0);\n"
 
               // Convert to Z24 format
               "  int4 workspace;\n"

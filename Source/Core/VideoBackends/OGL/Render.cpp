@@ -917,7 +917,7 @@ void Renderer::UpdateEFBCache(EFBAccessType type, u32 cacheRectIdx, const EFBRec
       if (type == EFBAccessType::PeekZ)
       {
         float* ptr = (float*)data;
-        value = MathUtil::Clamp<u32>((u32)(ptr[yData * targetPixelRcWidth + xData] * 16777216.0f),
+        value = MathUtil::Clamp<u32>((u32)(ptr[yData * targetPixelRcWidth + xData] * 16777215.0f),
                                      0, 0xFFFFFF);
       }
       else
@@ -1157,8 +1157,8 @@ void Renderer::SetViewport()
                           (float)scissorYOff);
   float Width = EFBToScaledXf(2.0f * xfmem.viewport.wd);
   float Height = EFBToScaledYf(-2.0f * xfmem.viewport.ht);
-  float min_depth = (xfmem.viewport.farZ - xfmem.viewport.zRange) / 16777216.0f;
-  float max_depth = xfmem.viewport.farZ / 16777216.0f;
+  float min_depth = (xfmem.viewport.farZ - xfmem.viewport.zRange) / 16777215.0f;
+  float max_depth = xfmem.viewport.farZ / 16777215.0f;
   if (Width < 0)
   {
     X += Width;
@@ -1186,8 +1186,8 @@ void Renderer::SetViewport()
   {
     // There's no way to support oversized depth ranges in this situation. Let's just clamp the
     // range to the maximum value supported by the console GPU and hope for the best.
-    min_depth = MathUtil::Clamp(min_depth, 0.0f, GX_MAX_DEPTH);
-    max_depth = MathUtil::Clamp(max_depth, 0.0f, GX_MAX_DEPTH);
+    min_depth = MathUtil::Clamp(min_depth, 0.0f, 1.0f);
+    max_depth = MathUtil::Clamp(max_depth, 0.0f, 1.0f);
   }
 
   if (UseVertexDepthRange())
@@ -1196,13 +1196,13 @@ void Renderer::SetViewport()
     // Taking into account whether the depth range is inverted or not.
     if (xfmem.viewport.zRange < 0.0f)
     {
-      min_depth = GX_MAX_DEPTH;
+      min_depth = 1.0f;
       max_depth = 0.0f;
     }
     else
     {
       min_depth = 0.0f;
-      max_depth = GX_MAX_DEPTH;
+      max_depth = 1.0f;
     }
   }
 
@@ -1229,7 +1229,7 @@ void Renderer::ClearScreen(const EFBRectangle& rc, bool colorEnable, bool alphaE
   // depth
   glDepthMask(zEnable ? GL_TRUE : GL_FALSE);
 
-  glClearDepthf(float(z & 0xFFFFFF) / 16777216.0f);
+  glClearDepthf(float(z & 0xFFFFFF) / 16777215.0f);
 
   // Update rect for clearing the picture
   glEnable(GL_SCISSOR_TEST);

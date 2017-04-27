@@ -573,7 +573,7 @@ static void WriteZ16Encoder(char*& p, APIType ApiType, const EFBCopyParams& para
 
   WriteSampleColor(p, "r", "depth", 0, ApiType, params);
 
-  WRITE(p, "  depth *= 16777216.0;\n");
+  WRITE(p, "  depth *= 16777215.0;\n");
   WRITE(p, "  expanded.r = floor(depth / (256.0 * 256.0));\n");
   WRITE(p, "  depth -= expanded.r * 256.0 * 256.0;\n");
   WRITE(p, "  expanded.g = floor(depth / 256.0);\n");
@@ -583,7 +583,7 @@ static void WriteZ16Encoder(char*& p, APIType ApiType, const EFBCopyParams& para
 
   WriteSampleColor(p, "r", "depth", 1, ApiType, params);
 
-  WRITE(p, "  depth *= 16777216.0;\n");
+  WRITE(p, "  depth *= 16777215.0;\n");
   WRITE(p, "  expanded.r = floor(depth / (256.0 * 256.0));\n");
   WRITE(p, "  depth -= expanded.r * 256.0 * 256.0;\n");
   WRITE(p, "  expanded.g = floor(depth / 256.0);\n");
@@ -605,7 +605,7 @@ static void WriteZ16LEncoder(char*& p, APIType ApiType, const EFBCopyParams& par
 
   WriteSampleColor(p, "r", "depth", 0, ApiType, params);
 
-  WRITE(p, "  depth *= 16777216.0;\n");
+  WRITE(p, "  depth *= 16777215.0;\n");
   WRITE(p, "  expanded.r = floor(depth / (256.0 * 256.0));\n");
   WRITE(p, "  depth -= expanded.r * 256.0 * 256.0;\n");
   WRITE(p, "  expanded.g = floor(depth / 256.0);\n");
@@ -617,7 +617,7 @@ static void WriteZ16LEncoder(char*& p, APIType ApiType, const EFBCopyParams& par
 
   WriteSampleColor(p, "r", "depth", 1, ApiType, params);
 
-  WRITE(p, "  depth *= 16777216.0;\n");
+  WRITE(p, "  depth *= 16777215.0;\n");
   WRITE(p, "  expanded.r = floor(depth / (256.0 * 256.0));\n");
   WRITE(p, "  depth -= expanded.r * 256.0 * 256.0;\n");
   WRITE(p, "  expanded.g = floor(depth / 256.0);\n");
@@ -644,7 +644,7 @@ static void WriteZ24Encoder(char*& p, APIType ApiType, const EFBCopyParams& para
 
   for (int i = 0; i < 2; i++)
   {
-    WRITE(p, "  depth%i *= 16777216.0;\n", i);
+    WRITE(p, "  depth%i *= 16777215.0;\n", i);
 
     WRITE(p, "  expanded%i.r = floor(depth%i / (256.0 * 256.0));\n", i, i);
     WRITE(p, "  depth%i -= expanded%i.r * 256.0 * 256.0;\n", i, i);

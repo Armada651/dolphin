@@ -229,11 +229,11 @@ u32 Renderer::AccessEFB(EFBAccessType type, u32 x, u32 y, u32 poke_data)
     if (bpmem.zcontrol.pixel_format == PEControl::RGB565_Z16)
     {
       // if Z is in 16 bit format you must return a 16 bit integer
-      ret = MathUtil::Clamp<u32>(static_cast<u32>(depth * 65536.0f), 0, 0xFFFF);
+      ret = MathUtil::Clamp<u32>(static_cast<u32>(depth * 65535.0f), 0, 0xFFFF);
     }
     else
     {
-      ret = MathUtil::Clamp<u32>(static_cast<u32>(depth * 16777216.0f), 0, 0xFFFFFF);
+      ret = MathUtil::Clamp<u32>(static_cast<u32>(depth * 16777215.0f), 0, 0xFFFFFF);
     }
 
     return ret;
@@ -260,7 +260,7 @@ void Renderer::PokeEFB(EFBAccessType type, const EfbPokeData* points, size_t num
     {
       // Convert to floating-point depth.
       const EfbPokeData& point = points[i];
-      float depth = (1.0f - float(point.data & 0xFFFFFF) / 16777216.0f);
+      float depth = (1.0f - float(point.data & 0xFFFFFF) / 16777215.0f);
       FramebufferManager::GetInstance()->PokeEFBDepth(point.x, point.y, depth);
     }
   }
@@ -368,7 +368,7 @@ void Renderer::ClearScreen(const EFBRectangle& rc, bool color_enable, bool alpha
   clear_color_value.color.float32[1] = static_cast<float>((color >> 8) & 0xFF) / 255.0f;
   clear_color_value.color.float32[2] = static_cast<float>((color >> 0) & 0xFF) / 255.0f;
   clear_color_value.color.float32[3] = static_cast<float>((color >> 24) & 0xFF) / 255.0f;
-  clear_depth_value.depthStencil.depth = (1.0f - (static_cast<float>(z & 0xFFFFFF) / 16777216.0f));
+  clear_depth_value.depthStencil.depth = (1.0f - (static_cast<float>(z & 0xFFFFFF) / 16777215.0f));
 
   // If we're not in a render pass (start of the frame), we can use a clear render pass
   // to discard the data, rather than loading and then clearing.
@@ -919,8 +919,8 @@ void Renderer::SetViewport()
   float y = Renderer::EFBToScaledYf(xfmem.viewport.yOrig + xfmem.viewport.ht - scissor_y_offset);
   float width = Renderer::EFBToScaledXf(2.0f * xfmem.viewport.wd);
   float height = Renderer::EFBToScaledYf(-2.0f * xfmem.viewport.ht);
-  float min_depth = (xfmem.viewport.farZ - xfmem.viewport.zRange) / 16777216.0f;
-  float max_depth = xfmem.viewport.farZ / 16777216.0f;
+  float min_depth = (xfmem.viewport.farZ - xfmem.viewport.zRange) / 16777215.0f;
+  float max_depth = xfmem.viewport.farZ / 16777215.0f;
   if (width < 0.0f)
   {
     x += width;
@@ -939,7 +939,7 @@ void Renderer::SetViewport()
   {
     // We need to ensure depth values are clamped the maximum value supported by the console GPU.
     min_depth = 0.0f;
-    max_depth = GX_MAX_DEPTH;
+    max_depth = 1.0f;
   }
 
   // We use an inverted depth range here to apply the Reverse Z trick.
