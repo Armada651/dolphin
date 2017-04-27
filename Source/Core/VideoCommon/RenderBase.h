@@ -175,8 +175,6 @@ protected:
 
   std::unique_ptr<PostProcessingShaderImplementation> m_post_processor;
 
-  static const float GX_MAX_DEPTH;
-
   Common::Flag m_surface_needs_change;
   Common::Event m_surface_changed;
   void* m_new_surface_handle = nullptr;

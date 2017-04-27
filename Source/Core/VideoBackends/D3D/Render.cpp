@@ -454,11 +454,11 @@ u32 Renderer::AccessEFB(EFBAccessType type, u32 x, u32 y, u32 poke_data)
     if (bpmem.zcontrol.pixel_format == PEControl::RGB565_Z16)
     {
       // if Z is in 16 bit format you must return a 16 bit integer
-      ret = MathUtil::Clamp<u32>(static_cast<u32>(val * 65536.0f), 0, 0xFFFF);
+      ret = MathUtil::Clamp<u32>(static_cast<u32>(val * 65535.0f), 0, 0xFFFF);
     }
     else
     {
-      ret = MathUtil::Clamp<u32>(static_cast<u32>(val * 16777216.0f), 0, 0xFFFFFF);
+      ret = MathUtil::Clamp<u32>(static_cast<u32>(val * 16777215.0f), 0, 0xFFFFFF);
     }
   }
 
@@ -521,8 +521,8 @@ void Renderer::SetViewport()
   float Y = Renderer::EFBToScaledYf(xfmem.viewport.yOrig + xfmem.viewport.ht - scissorYOff);
   float Wd = Renderer::EFBToScaledXf(2.0f * xfmem.viewport.wd);
   float Ht = Renderer::EFBToScaledYf(-2.0f * xfmem.viewport.ht);
-  float min_depth = (xfmem.viewport.farZ - xfmem.viewport.zRange) / 16777216.0f;
-  float max_depth = xfmem.viewport.farZ / 16777216.0f;
+  float min_depth = (xfmem.viewport.farZ - xfmem.viewport.zRange) / 16777215.0f;
+  float max_depth = xfmem.viewport.farZ / 16777215.0f;
   if (Wd < 0.0f)
   {
     X += Wd;
@@ -539,8 +539,8 @@ void Renderer::SetViewport()
   if (UseVertexDepthRange())
   {
     // We need to ensure depth values are clamped the maximum value supported by the console GPU.
-    min_depth = 0.0f;
-    max_depth = GX_MAX_DEPTH;
+    min_depth = D3D11_MIN_DEPTH;
+    max_depth = D3D11_MAX_DEPTH;
   }
 
   // In D3D, the viewport rectangle must fit within the render target.
@@ -588,7 +588,7 @@ void Renderer::ClearScreen(const EFBRectangle& rc, bool colorEnable, bool alphaE
 
   // Color is passed in bgra mode so we need to convert it to rgba
   u32 rgbaColor = (color & 0xFF00FF00) | ((color >> 16) & 0xFF) | ((color << 16) & 0xFF0000);
-  D3D::drawClearQuad(rgbaColor, 1.0f - (z & 0xFFFFFF) / 16777216.0f);
+  D3D::drawClearQuad(rgbaColor, 1.0f - (z & 0xFFFFFF) / 16777215.0f);
 
   D3D::stateman->PopDepthState();
   D3D::stateman->PopBlendState();
