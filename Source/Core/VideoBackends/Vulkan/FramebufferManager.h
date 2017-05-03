@@ -75,7 +75,7 @@ public:
   Texture2D* GetResolvedEFBColorTexture() const { return m_efb_resolve_color_texture.get(); }
   // Reads a framebuffer value back from the GPU. This may block if the cache is not current.
   u32 PeekEFBColor(u32 x, u32 y);
-  float PeekEFBDepth(u32 x, u32 y);
+  u32 PeekEFBDepth(u32 x, u32 y);
   void InvalidatePeekCache();
 
   // Writes a value to the framebuffer. This will never block, and writes will be batched.
