@@ -668,12 +668,12 @@ bool FramebufferManager::PopulateColorReadbackTexture()
   return true;
 }
 
-float FramebufferManager::PeekEFBDepth(u32 x, u32 y)
+u32 FramebufferManager::PeekEFBDepth(u32 x, u32 y)
 {
   if (!m_depth_readback_texture_valid && !PopulateDepthReadbackTexture())
-    return 0.0f;
+    return 0;
 
-  float value;
+  u32 value;
   m_depth_readback_texture->ReadTexel(x, y, &value);
   return value;
 }

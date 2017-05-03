@@ -789,7 +789,7 @@ ShaderCode GeneratePixelShaderCode(APIType ApiType, const ShaderHostConfig& host
   }
   else
   {
-    if (ApiType == APIType::D3D || ApiType == APIType::Vulkan)
+    if (ApiType == APIType::D3D)
       out.Write("\tint zCoord = int((1.0 - rawpos.z) * 16777215.0);\n");
     else
       out.Write("\tint zCoord = int(rawpos.z * 16777215.0);\n");
@@ -802,7 +802,7 @@ ShaderCode GeneratePixelShaderCode(APIType ApiType, const ShaderHostConfig& host
   // Note: z-textures are not written to depth buffer if early depth test is used
   if (uid_data->per_pixel_depth && uid_data->early_ztest)
   {
-    if (ApiType == APIType::D3D || ApiType == APIType::Vulkan)
+    if (ApiType == APIType::D3D)
       out.Write("\tdepth = 1.0 - float(zCoord) / 16777215.0;\n");
     else
       out.Write("\tdepth = float(zCoord) / 16777215.0;\n");
@@ -823,7 +823,7 @@ ShaderCode GeneratePixelShaderCode(APIType ApiType, const ShaderHostConfig& host
 
   if (uid_data->per_pixel_depth && uid_data->late_ztest)
   {
-    if (ApiType == APIType::D3D || ApiType == APIType::Vulkan)
+    if (ApiType == APIType::D3D)
       out.Write("\tdepth = 1.0 - float(zCoord) / 16777215.0;\n");
     else
       out.Write("\tdepth = float(zCoord) / 16777215.0;\n");
@@ -1288,8 +1288,7 @@ static void WriteAlphaTest(ShaderCode& out, const pixel_shader_uid_data* uid_dat
     out.Write("\t\tocol1 = float4(0.0, 0.0, 0.0, 0.0);\n");
   if (per_pixel_depth)
   {
-    out.Write("\t\tdepth = %s;\n",
-              (ApiType == APIType::D3D || ApiType == APIType::Vulkan) ? "0.0" : "1.0");
+    out.Write("\t\tdepth = %s;\n", (ApiType == APIType::D3D) ? "0.0" : "1.0");
   }
 
   // ZCOMPLOC HACK:
