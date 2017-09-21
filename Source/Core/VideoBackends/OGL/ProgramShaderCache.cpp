@@ -600,8 +600,8 @@ void ProgramShaderCache::Init()
   // on the main thread the first time they are used, causing stutter. Nouveau has been
   // reported to crash if draw calls are invoked on the shared context threads. For now,
   // disable asynchronous compilation on Mesa.
-  if (!DriverDetails::HasBug(DriverDetails::BUG_SHARED_CONTEXT_SHADER_COMPILATION))
-    s_async_compiler = std::make_unique<SharedContextAsyncShaderCompiler>();
+  // if (!DriverDetails::HasBug(DriverDetails::BUG_SHARED_CONTEXT_SHADER_COMPILATION))
+  //   s_async_compiler = std::make_unique<SharedContextAsyncShaderCompiler>();
 
   // Read our shader cache, only if supported and enabled
   if (g_ogl_config.bSupportsGLSLCache && g_ActiveConfig.bShaderCache)

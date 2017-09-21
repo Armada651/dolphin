@@ -120,7 +120,7 @@ FramebufferManager::FramebufferManager(int targetWidth, int targetHeight, int ms
   m_targetWidth = targetWidth;
   m_targetHeight = targetHeight;
   m_msaaSamples = msaaSamples;
-  m_enable_stencil_buffer = enable_stencil_buffer;
+  m_enable_stencil_buffer = true;
 
   // The EFB can be set to different pixel formats by the game through the
   // BPMEM_ZCOMPARE register (which should probably have a different name).
@@ -139,15 +139,9 @@ FramebufferManager::FramebufferManager(int targetWidth, int targetHeight, int ms
   m_efbFramebuffer.resize(m_EFBLayers);
   m_resolvedFramebuffer.resize(m_EFBLayers);
 
-  GLenum depth_internal_format = GL_DEPTH_COMPONENT32F;
-  GLenum depth_pixel_format = GL_DEPTH_COMPONENT;
-  GLenum depth_data_type = GL_FLOAT;
-  if (m_enable_stencil_buffer)
-  {
-    depth_internal_format = GL_DEPTH32F_STENCIL8;
-    depth_pixel_format = GL_DEPTH_STENCIL;
-    depth_data_type = GL_FLOAT_32_UNSIGNED_INT_24_8_REV;
-  }
+  GLenum depth_internal_format = GL_DEPTH24_STENCIL8;
+  GLenum depth_pixel_format = GL_DEPTH_STENCIL;
+  GLenum depth_data_type = GL_UNSIGNED_INT_24_8;
 
   if (m_msaaSamples <= 1)
   {

@@ -893,18 +893,8 @@ void Renderer::UpdateEFBCache(EFBAccessType type, u32 cacheRectIdx, const EFBRec
       u32 xEFB = efbPixelRc.left + xCache;
       u32 xPixel = (EFBToScaledX(xEFB) + EFBToScaledX(xEFB + 1)) / 2;
       u32 xData = xPixel - targetPixelRc.left;
-      u32 value;
-      if (type == EFBAccessType::PeekZ)
-      {
-        float* ptr = (float*)data;
-        value = MathUtil::Clamp<u32>((u32)(ptr[yData * targetPixelRcWidth + xData] * 16777215.0f),
-                                     0, 0xFFFFFF);
-      }
-      else
-      {
-        u32* ptr = (u32*)data;
-        value = ptr[yData * targetPixelRcWidth + xData];
-      }
+      u32* ptr = (u32*)data;
+      u32 value = ptr[yData * targetPixelRcWidth + xData];
       s_efbCache[cacheType][cacheRectIdx][yCache * EFB_CACHE_RECT_SIZE + xCache] = value;
     }
   }
@@ -974,14 +964,14 @@ u32 Renderer::AccessEFB(EFBAccessType type, u32 x, u32 y, u32 poke_data)
       std::unique_ptr<float[]> depthMap(new float[targetPixelRcWidth * targetPixelRcHeight]);
 
       glReadPixels(targetPixelRc.left, targetPixelRc.bottom, targetPixelRcWidth,
-                   targetPixelRcHeight, GL_DEPTH_COMPONENT, GL_FLOAT, depthMap.get());
+                   targetPixelRcHeight, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, depthMap.get());
 
       UpdateEFBCache(type, cacheRectIdx, efbPixelRc, targetPixelRc, depthMap.get());
     }
 
     u32 xRect = x % EFB_CACHE_RECT_SIZE;
     u32 yRect = y % EFB_CACHE_RECT_SIZE;
-    u32 z = s_efbCache[0][cacheRectIdx][yRect * EFB_CACHE_RECT_SIZE + xRect];
+    u32 z = s_efbCache[0][cacheRectIdx][yRect * EFB_CACHE_RECT_SIZE + xRect] >> 8;
 
     // if Z is in 16 bit format you must return a 16 bit integer
     if (bpmem.zcontrol.pixel_format == PEControl::RGB565_Z16)
@@ -1427,12 +1417,9 @@ void Renderer::SwapImpl(u32 xfbAddr, u32 fbWidth, u32 fbStride, u32 fbHeight,
   }
 
   bool target_size_changed = CalculateTargetSize();
-  bool stencil_buffer_enabled =
-      static_cast<FramebufferManager*>(g_framebuffer_manager.get())->HasStencilBuffer();
 
   bool fb_needs_update = target_size_changed ||
                          s_last_multisamples != g_ActiveConfig.iMultisamples ||
-                         stencil_buffer_enabled != BoundingBox::NeedsStencilBuffer() ||
                          s_last_stereo_mode != (g_ActiveConfig.iStereoMode > 0);
 
   if (xfbchanged || window_resized || fb_needs_update)

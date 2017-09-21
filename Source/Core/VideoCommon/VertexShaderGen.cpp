@@ -438,8 +438,7 @@ ShaderCode GenerateVertexShaderCode(APIType api_type, const ShaderHostConfig& ho
   // divide, because some games will use a depth range larger than what is allowed by the
   // graphics API. These large depth ranges will still be clipped to the 0..1 range, so these
   // games effectively add a depth bias to the values written to the depth buffer.
-  out.Write("o.pos.z = o.pos.w * " I_PIXELCENTERCORRECTION ".w - "
-            "o.pos.z * " I_PIXELCENTERCORRECTION ".z;\n");
+  out.Write("o.pos.z = -o.pos.z;\n");
 
   if (!host_config.backend_clip_control)
   {
