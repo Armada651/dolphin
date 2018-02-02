@@ -138,14 +138,14 @@ FramebufferManager::FramebufferManager(int targetWidth, int targetHeight, int ms
   m_efbFramebuffer.resize(m_EFBLayers);
   m_resolvedFramebuffer.resize(m_EFBLayers);
 
-  GLenum depth_internal_format = GL_DEPTH_COMPONENT32F;
+  GLenum depth_internal_format = GL_DEPTH_COMPONENT24;
   GLenum depth_pixel_format = GL_DEPTH_COMPONENT;
-  GLenum depth_data_type = GL_FLOAT;
+  GLenum depth_data_type = GL_UNSIGNED_INT;
   if (m_enable_stencil_buffer)
   {
-    depth_internal_format = GL_DEPTH32F_STENCIL8;
+    depth_internal_format = GL_DEPTH24_STENCIL8;
     depth_pixel_format = GL_DEPTH_STENCIL;
-    depth_data_type = GL_FLOAT_32_UNSIGNED_INT_24_8_REV;
+    depth_data_type = GL_UNSIGNED_INT_24_8;
   }
 
   if (m_msaaSamples <= 1)

@@ -670,7 +670,7 @@ bool FramebufferManager::PopulateColorReadbackTexture()
 
 u32 FramebufferManager::PeekEFBDepth(u32 x, u32 y)
 {
-  if (!m_depth_readback_texture_valid && !PopulateDepthReadbackTexture())
+  if (!PopulateDepthReadbackTexture())
     return 0;
 
   u32 value;
@@ -934,13 +934,13 @@ void FramebufferManager::PokeEFBColor(u32 x, u32 y, u32 color)
     m_color_readback_texture->WriteTexel(x, y, &color);
 }
 
-void FramebufferManager::PokeEFBDepth(u32 x, u32 y, float depth)
+void FramebufferManager::PokeEFBDepth(u32 x, u32 y, u32 depth)
 {
   // Flush if we exceeded the number of vertices per batch.
   if ((m_color_poke_vertices.size() + 6) > MAX_POKE_VERTICES)
     FlushEFBPokes();
 
-  CreatePokeVertices(&m_depth_poke_vertices, x, y, depth, 0);
+  CreatePokeVertices(&m_depth_poke_vertices, x, y, depth / 16777215.0f, 0);
 
   // Update the peek cache if it's valid, since we know the color of the pixel now.
   if (m_depth_readback_texture_valid)

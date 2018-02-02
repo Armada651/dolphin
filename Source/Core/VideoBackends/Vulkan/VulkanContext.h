@@ -39,6 +39,9 @@ public:
                                           const VkPhysicalDeviceFeatures& features);
   static void PopulateBackendInfoMultisampleModes(VideoConfig* config, VkPhysicalDevice gpu,
                                                   const VkPhysicalDeviceProperties& properties);
+  static void
+  PopulateBackendInfoExtensions(VideoConfig* config, VkPhysicalDevice gpu,
+                                const std::vector<VkExtensionProperties>& supported_extensions);
 
   // Creates a Vulkan device context.
   // This assumes that PopulateBackendInfo and PopulateBackendInfoAdapters has already
@@ -70,6 +73,10 @@ public:
   const VkPhysicalDeviceProperties& GetDeviceProperties() const { return m_device_properties; }
   const VkPhysicalDeviceFeatures& GetDeviceFeatures() const { return m_device_features; }
   const VkPhysicalDeviceLimits& GetDeviceLimits() const { return m_device_properties.limits; }
+  const std::vector<VkExtensionProperties>& GetAvailableExtensions() const
+  {
+    return m_available_extension_list;
+  }
   // Support bits
   bool SupportsAnisotropicFiltering() const
   {
@@ -111,7 +118,7 @@ private:
   using ExtensionList = std::vector<const char*>;
   static bool SelectInstanceExtensions(ExtensionList* extension_list, bool enable_surface,
                                        bool enable_debug_report);
-  bool SelectDeviceExtensions(ExtensionList* extension_list, bool enable_surface);
+  bool SelectDeviceExtensions(ExtensionList* supported_extension_list, bool enable_surface);
   bool SelectDeviceFeatures();
   bool CreateDevice(VkSurfaceKHR surface, bool enable_validation_layer);
 
@@ -130,6 +137,7 @@ private:
   VkPhysicalDeviceFeatures m_device_features = {};
   VkPhysicalDeviceProperties m_device_properties = {};
   VkPhysicalDeviceMemoryProperties m_device_memory_properties = {};
+  std::vector<VkExtensionProperties> m_available_extension_list;
 
   bool m_supports_nv_glsl_extension = false;
 };

@@ -248,6 +248,7 @@ void VulkanContext::PopulateBackendInfo(VideoConfig* config)
   config->backend_info.bSupportsCopyToVram = true;           // Assumed support.
   config->backend_info.bForceCopyToRam = false;
   config->backend_info.bSupportsFramebufferFetch = false;
+  config->backend_info.bSupportsOversizedDepthRanges = false;  // Dependent on features.
 }
 
 void VulkanContext::PopulateBackendInfoAdapters(VideoConfig* config, const GPUList& gpu_list)
@@ -344,6 +345,21 @@ void VulkanContext::PopulateBackendInfoMultisampleModes(
     config->backend_info.AAModes.emplace_back(64);
 }
 
+void VulkanContext::PopulateBackendInfoExtensions(
+    VideoConfig* config, VkPhysicalDevice gpu,
+    const std::vector<VkExtensionProperties>& available_extension_list)
+{
+  auto SupportsExtension = [&](const char* name) {
+    return (std::find_if(available_extension_list.begin(), available_extension_list.end(),
+                         [&](const VkExtensionProperties& properties) {
+                           return !strcmp(name, properties.extensionName);
+                         }) != available_extension_list.end());
+  };
+
+  config->backend_info.bSupportsOversizedDepthRanges =
+      SupportsExtension(VK_EXT_DEPTH_RANGE_UNRESTRICTED_EXTENSION_NAME);
+}
+
 std::unique_ptr<VulkanContext> VulkanContext::Create(VkInstance instance, VkPhysicalDevice gpu,
                                                      VkSurfaceKHR surface,
                                                      bool enable_debug_reports,
@@ -392,19 +408,19 @@ bool VulkanContext::SelectDeviceExtensions(ExtensionList* extension_list, bool e
     return false;
   }
 
-  std::vector<VkExtensionProperties> available_extension_list(extension_count);
+  m_available_extension_list.resize(extension_count);
   res = vkEnumerateDeviceExtensionProperties(m_physical_device, nullptr, &extension_count,
-                                             available_extension_list.data());
+                                             m_available_extension_list.data());
   _assert_(res == VK_SUCCESS);
 
-  for (const auto& extension_properties : available_extension_list)
+  for (const auto& extension_properties : m_available_extension_list)
     INFO_LOG(VIDEO, "Available extension: %s", extension_properties.extensionName);
 
-  auto SupportsExtension = [&](const char* name, bool required) {
-    if (std::find_if(available_extension_list.begin(), available_extension_list.end(),
+  auto SelectExtension = [&](const char* name, bool required) {
+    if (std::find_if(m_available_extension_list.begin(), m_available_extension_list.end(),
                      [&](const VkExtensionProperties& properties) {
                        return !strcmp(name, properties.extensionName);
-                     }) != available_extension_list.end())
+                     }) != m_available_extension_list.end())
     {
       INFO_LOG(VIDEO, "Enabling extension: %s", name);
       extension_list->push_back(name);
@@ -417,10 +433,11 @@ bool VulkanContext::SelectDeviceExtensions(ExtensionList* extension_list, bool e
     return false;
   };
 
-  if (enable_surface && !SupportsExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME, true))
+  if (enable_surface && !SelectExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME, true))
     return false;
 
-  m_supports_nv_glsl_extension = SupportsExtension(VK_NV_GLSL_SHADER_EXTENSION_NAME, false);
+  m_supports_nv_glsl_extension = SelectExtension(VK_NV_GLSL_SHADER_EXTENSION_NAME, false);
+  SelectExtension(VK_EXT_DEPTH_RANGE_UNRESTRICTED_EXTENSION_NAME, false);
   return true;
 }
 

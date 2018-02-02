@@ -54,6 +54,21 @@ void VideoBackend::InitBackendInfo()
           vkGetPhysicalDeviceFeatures(gpu, &features);
           VulkanContext::PopulateBackendInfoFeatures(&g_Config, gpu, properties, features);
           VulkanContext::PopulateBackendInfoMultisampleModes(&g_Config, gpu, properties);
+
+          u32 extension_count = 0;
+          VkResult res =
+              vkEnumerateDeviceExtensionProperties(gpu, nullptr, &extension_count, nullptr);
+
+          if (res == VK_SUCCESS)
+          {
+            std::vector<VkExtensionProperties> available_extension_list(extension_count);
+            res = vkEnumerateDeviceExtensionProperties(gpu, nullptr, &extension_count,
+                                                       available_extension_list.data());
+
+            if (res == VK_SUCCESS)
+              VulkanContext::PopulateBackendInfoExtensions(&g_Config, gpu,
+                                                           available_extension_list);
+          }
         }
       }
 
@@ -182,6 +197,8 @@ bool VideoBackend::Initialize(void* window_handle)
                                              g_vulkan_context->GetDeviceFeatures());
   VulkanContext::PopulateBackendInfoMultisampleModes(
       &g_Config, g_vulkan_context->GetPhysicalDevice(), g_vulkan_context->GetDeviceProperties());
+  VulkanContext::PopulateBackendInfoExtensions(&g_Config, g_vulkan_context->GetPhysicalDevice(),
+                                               g_vulkan_context->GetAvailableExtensions());
 
   // With the backend information populated, we can now initialize videocommon.
   InitializeShared();

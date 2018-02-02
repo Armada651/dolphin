@@ -131,11 +131,10 @@ GetVulkanMultisampleState(const MultisamplingState& state)
 
 static VkPipelineDepthStencilStateCreateInfo GetVulkanDepthStencilState(const DepthState& state)
 {
-  // Less/greater are swapped due to inverted depth.
   static constexpr std::array<VkCompareOp, 8> funcs = {
-      {VK_COMPARE_OP_NEVER, VK_COMPARE_OP_GREATER, VK_COMPARE_OP_EQUAL,
-       VK_COMPARE_OP_GREATER_OR_EQUAL, VK_COMPARE_OP_LESS, VK_COMPARE_OP_NOT_EQUAL,
-       VK_COMPARE_OP_LESS_OR_EQUAL, VK_COMPARE_OP_ALWAYS}};
+      {VK_COMPARE_OP_NEVER, VK_COMPARE_OP_LESS, VK_COMPARE_OP_EQUAL, VK_COMPARE_OP_LESS_OR_EQUAL,
+       VK_COMPARE_OP_GREATER, VK_COMPARE_OP_NOT_EQUAL, VK_COMPARE_OP_GREATER_OR_EQUAL,
+       VK_COMPARE_OP_ALWAYS}};
 
   return {
       VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,  // VkStructureType sType
