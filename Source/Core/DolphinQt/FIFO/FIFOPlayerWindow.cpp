@@ -82,8 +82,10 @@ void FIFOPlayerWindow::CreateWidgets()
   auto* object_range_layout = new QHBoxLayout;
 
   m_object_range_from = new QSpinBox;
+  m_object_range_from->setMaximum(INT_MAX);
   m_object_range_from_label = new QLabel(tr("From:"));
   m_object_range_to = new QSpinBox;
+  m_object_range_to->setMaximum(INT_MAX);
   m_object_range_to_label = new QLabel(tr("To:"));
 
   object_range_layout->addWidget(m_object_range_from_label);
